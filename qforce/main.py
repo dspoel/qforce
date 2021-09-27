@@ -13,7 +13,8 @@ from .hessian import fit_hessian, fit_hessian_nl
 from .misc import check_continue
 
 
-def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psave=None, presets=None):
+def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psave=None,
+               process_file=None, presets=None):
     #### Initialization phase ####
     print('\n#### INITIALIZATION PHASE ####\n')
     config, job = initialize(input_arg, config, presets)
@@ -27,6 +28,9 @@ def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psa
     if psave is not None:
         psave = job.dir + '/' + psave + '.json'
         print(f'psave path: {psave}')
+    if process_file is not None:
+        process_file = job.dir + '/' + process_file + '.txt'
+        print(f'process_file path: {process_file}')
 
     check_wellposedness(config)
 
@@ -55,10 +59,10 @@ def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psa
     #### Hessian fitting phase ####
     print('\n#### HESSIAN FITTING PHASE ####\n')
     md_hessian = None
-    if config.opt.opt_type == 'linear':
+    if config.opt.fit_type == 'linear':
         md_hessian = fit_hessian(config, mol, qm_hessian_out)
-    elif config.opt.opt_type == 'non_linear':
-        md_hessian = fit_hessian_nl(config, mol, qm_hessian_out, pinput, psave)
+    elif config.opt.fit_type == 'non_linear':
+        md_hessian = fit_hessian_nl(config, mol, qm_hessian_out, pinput, psave, process_file)
 
     check_continue(config)
 
@@ -118,7 +122,7 @@ def print_outcome(job_dir):
 
 
 def check_wellposedness(config):
-    if config.opt.opt_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
+    if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
         raise Exception('Linear optimization is not valid for Morse bond potential')
     elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
         raise Exception('Morse and Morse MP bonds cannot be used at the same time')
