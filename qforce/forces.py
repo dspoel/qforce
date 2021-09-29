@@ -77,6 +77,27 @@ def calc_angles(coords, atoms, theta0, fconst, force):
         force[atoms[1]] -= f1 + f3
     return energy
 
+@jit(nopython=True)
+def calc_poly_angles(coords, atoms, theta0, fconst, force, order):
+    theta, vec12, vec32, r12, r32 = get_angle(coords[atoms])
+    cos_theta = math.cos(theta)
+    cos_theta_sq = cos_theta**2
+    dtheta = theta - theta0
+    energy = (1/order) * fconst[0] * dtheta**order
+    if cos_theta_sq < 1:
+        st = - fconst[0] * dtheta / np.sqrt(1. - cos_theta_sq)
+        sth = st * cos_theta
+        c13 = st / r12 / r32
+        c11 = sth / r12 / r12
+        c33 = sth / r32 / r32
+
+        f1 = c11 * vec12 - c13 * vec32
+        f3 = c33 * vec32 - c13 * vec12
+        force[atoms[0]] += f1
+        force[atoms[2]] += f3
+        force[atoms[1]] -= f1 + f3
+    return energy
+
 def calc_cross_bond_bond(coords, atoms, r0s, fconst, force):
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
     vec32, r32 = get_dist(coords[atoms[2]], coords[atoms[1]])

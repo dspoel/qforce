@@ -1,10 +1,11 @@
 import numpy as np
 #
-from .baseterms import TermBase
+from .baseterms import TermBase, TermABC, TermFactory
 #
 from ..forces import get_dist, get_angle
 from ..forces import (calc_bonds, calc_morse, calc_morse_mp, calc_morse_mp2,
-                      calc_angles, calc_cross_bond_bond, calc_cross_bond_angle)
+                      calc_angles, calc_poly_angles, calc_cross_bond_bond,
+                      calc_cross_bond_angle)
 #
 from .energies import bd_energy
 
@@ -123,6 +124,53 @@ class AngleTerm(TermBase):
                 angle_terms.append(cls([a1, a2, a3], theta, a_type, 1))
 
         return angle_terms
+
+
+class PolyAngleTerms(TermFactory):
+
+    name = 'PolyAngleTerms'
+
+    _term_types = {}
+
+    _always_on = []
+    _default_off = []
+
+    @classmethod
+    def get_terms(cls, topo, non_bonded):
+        terms = cls.get_terms_container()
+
+        for a1, a2, a3 in topo.angles:
+
+            if not topo.edge(a2, a1)['in_ring3'] or not topo.edge(a2, a3)['in_ring3']:
+                theta = get_angle(topo.coords[[a1, a2, a3]])[0]
+                if theta > 2.9671:  # if angle is larger than 170 degree, make it 180
+                    theta = np.pi
+
+                b21 = topo.edge(a2, a1)['vers']
+                b23 = topo.edge(a2, a3)['vers']
+                a_type = sorted([f"{topo.types[a2]}({b21}){topo.types[a1]}",
+                                 f"{topo.types[a2]}({b23}){topo.types[a3]}"])
+                a_type = f"{a_type[0]}_{a_type[1]}"
+                # TODO: need access to config here!
+                for order in range(config.term_custom.poly_angle_order):
+                    terms.append(PolyAngleTerm([a1, a2, a3], theta, a_type, 1, order))
+
+        return terms
+
+
+class PolyAngleTerm(TermABC):
+
+    name = 'PolyAngleTerm'
+
+    def __init__(self, atomids, equ, typename, n_params, order, fconst=None):
+        TermABC.__init__(atomids, equ, typename, n_params, fconst)
+        self.order = order
+
+    def __str__(self):
+        return f'{self.name}{self.order}({self.typename})'
+
+    def _calc_forces(self, crd, force, fconst):
+        return calc_poly_angles(crd, self.atomids, self.equ, fconst, force, order)
 
 
 class UreyAngleTerm(TermBase):

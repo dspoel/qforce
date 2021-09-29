@@ -7,7 +7,7 @@ from .storage import TermStorage, MultipleTermStorge
 
 class TermABC(ABC):
 
-    __slots__ = ('atomids', 'equ', 'idx', 'fconst', '_typename', '_name')
+    __slots__ = ('atomids', 'equ', 'idx', 'fconst', '_typename', '_name', 'n_params', 'order')
 
     name = 'NOT_NAMED'
 
