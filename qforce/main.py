@@ -60,7 +60,7 @@ def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psa
     print('\n#### HESSIAN FITTING PHASE ####\n')
     md_hessian = None
     if config.opt.fit_type == 'linear':
-        md_hessian = fit_hessian(config, mol, qm_hessian_out)
+        md_hessian = fit_hessian(config, mol, qm_hessian_out, psave)
     elif config.opt.fit_type == 'non_linear':
         md_hessian = fit_hessian_nl(config, mol, qm_hessian_out, pinput, psave, process_file)
 

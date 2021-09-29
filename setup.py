@@ -9,6 +9,7 @@ setup(
           'bin/morse_to_morse_mp2',
           'bin/morse_mp_to_morse_mp2',
           'bin/morse_mp2_to_morse_mp',
+          'bin/compare_bond_fit',
       ],
      )
 

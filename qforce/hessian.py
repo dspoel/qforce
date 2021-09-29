@@ -167,7 +167,7 @@ def fit_hessian_nl(config, mol, qm, pinput, psave, process_file):
     return full_md_hessian_1d
 
 
-def fit_hessian(config, mol, qm):
+def fit_hessian(config, mol, qm, psave):
     print('Running fit_hessian')
 
     if config.opt.average == 'before':
@@ -210,6 +210,11 @@ def fit_hessian(config, mol, qm):
         if term.idx < len(fit):
             term.fconst = np.array([fit[term.idx]])
             print(f'Term {term} with idx {term.idx} has fconst {term.fconst}')
+
+    # If psave, write fit to .json
+    if psave is not None:
+        print(f'Writing fit to {psave}...')
+        write_opt_params(psave, sorted(mol.terms, key=lambda trm: trm.idx), mol)
 
     if config.opt.average == 'after':
         print('Running average_unique_minima after optimization but before hessian computation...')
