@@ -7,7 +7,7 @@ from .storage import TermStorage, MultipleTermStorge
 
 class TermABC(ABC):
 
-    __slots__ = ('atomids', 'equ', 'idx', 'fconst', '_typename', '_name', 'n_params', 'order')
+    __slots__ = ('atomids', 'equ', 'idx', 'fconst', '_typename', '_name', 'n_params')
 
     name = 'NOT_NAMED'
 
@@ -87,13 +87,15 @@ class TermFactory(ABC):
 
     @classmethod
     @abstractmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         """
             Args:
                 topo: Topology object, const
                     Stores all topology information
                 non_bonded: NonBonded object, const
                     Stores all non bonded interaction information
+                config: global settings
+                    Stores the global config settings
 
             Return:
                 list of cls objects

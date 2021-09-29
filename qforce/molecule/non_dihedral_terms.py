@@ -1,6 +1,6 @@
 import numpy as np
 #
-from .baseterms import TermBase, TermABC, TermFactory
+from .baseterms import TermBase
 #
 from ..forces import get_dist, get_angle
 from ..forces import (calc_bonds, calc_morse, calc_morse_mp, calc_morse_mp2,
@@ -17,7 +17,7 @@ class BondTerm(TermBase):
         return calc_bonds(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         bond_terms = cls.get_terms_container()
 
         for a1, a2 in topo.bonds:
@@ -43,7 +43,7 @@ class MorseTerm(TermBase):
         return calc_morse(crd, self.atomids, self.equ, fconst, force, bd_energy[info])
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         bond_terms = cls.get_terms_container()
 
         for a1, a2 in topo.bonds:
@@ -64,7 +64,7 @@ class MorseMPTerm(TermBase):
         return calc_morse_mp(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         bond_terms = cls.get_terms_container()
 
         for a1, a2 in topo.bonds:
@@ -85,7 +85,7 @@ class MorseMP2Term(TermBase):
         return calc_morse_mp2(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         bond_terms = cls.get_terms_container()
 
         for a1, a2 in topo.bonds:
@@ -106,7 +106,7 @@ class AngleTerm(TermBase):
         return calc_angles(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         angle_terms = cls.get_terms_container()
 
         for a1, a2, a3 in topo.angles:
@@ -126,17 +126,22 @@ class AngleTerm(TermBase):
         return angle_terms
 
 
-class PolyAngleTerms(TermFactory):
+class PolyAngleTerm(TermBase):
 
-    name = 'PolyAngleTerms'
+    name = 'PolyAngleTerm'
 
-    _term_types = {}
+    def __init__(self, atomids, equ, typename, n_params, order, fconst=None):
+        super().__init__(atomids, equ, typename, n_params, fconst)
+        self.order = order
 
-    _always_on = []
-    _default_off = []
+    def __str__(self):
+        return f'{self.name}{self.order}({self.typename})'
+
+    def _calc_forces(self, crd, force, fconst):
+        return calc_poly_angles(crd, self.atomids, self.equ, fconst, force, self.order)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         terms = cls.get_terms_container()
 
         for a1, a2, a3 in topo.angles:
@@ -151,26 +156,10 @@ class PolyAngleTerms(TermFactory):
                 a_type = sorted([f"{topo.types[a2]}({b21}){topo.types[a1]}",
                                  f"{topo.types[a2]}({b23}){topo.types[a3]}"])
                 a_type = f"{a_type[0]}_{a_type[1]}"
-                # TODO: need access to config here!
-                for order in range(config.term_custom.poly_angle_order):
-                    terms.append(PolyAngleTerm([a1, a2, a3], theta, a_type, 1, order))
+                for order in range(1, config.term_custom.poly_angle_order + 1):
+                    terms.append(cls([a1, a2, a3], theta, a_type, 1, order))
 
         return terms
-
-
-class PolyAngleTerm(TermABC):
-
-    name = 'PolyAngleTerm'
-
-    def __init__(self, atomids, equ, typename, n_params, order, fconst=None):
-        TermABC.__init__(atomids, equ, typename, n_params, fconst)
-        self.order = order
-
-    def __str__(self):
-        return f'{self.name}{self.order}({self.typename})'
-
-    def _calc_forces(self, crd, force, fconst):
-        return calc_poly_angles(crd, self.atomids, self.equ, fconst, force, order)
 
 
 class UreyAngleTerm(TermBase):
@@ -180,7 +169,7 @@ class UreyAngleTerm(TermBase):
         return calc_bonds(crd, self.atomids[::2], self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         urey_terms = cls.get_terms_container()
 
         for a1, a2, a3 in topo.angles:
@@ -207,7 +196,7 @@ class CrossBondBondTerm(TermBase):
         return calc_cross_bond_bond(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         cross_bond_bond_terms = cls.get_terms_container()
 
         for a1, a2, a3 in topo.angles:
@@ -237,7 +226,7 @@ class CrossBondAngleTerm(TermBase):
         return calc_cross_bond_angle(crd, self.atomids, self.equ, fconst, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
 
         cross_bond_angle_terms = cls.get_terms_container()
 

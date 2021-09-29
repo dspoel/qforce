@@ -13,4 +13,4 @@ class Molecule(object):
         self.n_atoms = len(self.elements)
         self.topo = Topology(config.ff, qm_out)
         self.non_bonded = NonBonded.from_topology(config.ff, job, qm_out, self.topo, ext_q, ext_lj)
-        self.terms = Terms.from_topology(config.terms, self.topo, self.non_bonded)
+        self.terms = Terms.from_topology(config, self.topo, self.non_bonded)

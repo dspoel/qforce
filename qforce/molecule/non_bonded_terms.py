@@ -12,7 +12,7 @@ class NonBondedTerms(TermBase):
         return calc_pairs(crd, self.atomids, self.equ, force)
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         """get terms"""
 
         non_bonded_terms = cls.get_terms_container()

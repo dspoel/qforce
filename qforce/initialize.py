@@ -15,6 +15,10 @@ class Initialize(Colt):
 # Debug Mode
 debug_mode = False :: bool
 
+[term_custom]
+# Order of polynomial angle terms
+poly_angle_order = 4 :: int :: >0
+
 [opt]
 # Verbose settings for optimizer
 verbose = 1 :: int :: [0, 1, 2]

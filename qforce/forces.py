@@ -85,7 +85,7 @@ def calc_poly_angles(coords, atoms, theta0, fconst, force, order):
     dtheta = theta - theta0
     energy = (1/order) * fconst[0] * dtheta**order
     if cos_theta_sq < 1:
-        st = - fconst[0] * dtheta / np.sqrt(1. - cos_theta_sq)
+        st = - fconst[0] * (dtheta**(order-1)) / np.sqrt(1. - cos_theta_sq)
         sth = st * cos_theta
         c13 = st / r12 / r32
         c11 = sth / r12 / r12

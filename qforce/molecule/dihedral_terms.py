@@ -120,7 +120,7 @@ class DihedralTerms(TermFactory):
     _default_off = []
 
     @classmethod
-    def get_terms(cls, topo, non_bonded):
+    def get_terms(cls, topo, non_bonded, config):
         terms = cls.get_terms_container()
 
         # helper functions to improve readability

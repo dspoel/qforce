@@ -322,7 +322,7 @@ def calc_forces_nl(coords, mol, params):
 def average_unique_minima(terms, config):
     print('Entering average_unique_minima')
     unique_terms = {}
-    trms = ['bond', 'angle', 'morse', 'morse_mp', 'morse_mp2', 'dihedral/inversion']
+    trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle', 'poly_angle', 'dihedral/inversion']
     averaged_terms = [x for x in trms if config.terms.__dict__[x]]
     print(f'Averaged terms: {averaged_terms}')
     for name in averaged_terms:
@@ -344,11 +344,12 @@ def average_unique_minima(terms, config):
                 bond1_atoms = sorted(term.atomids[:2])
                 bond2_atoms = sorted(term.atomids[1:])
                 terms_bond_str = _get_terms_bond_str(config)
+                terms_angle_str = _get_terms_angle_str(config)
                 bond1 = [bond.equ for bond in terms[terms_bond_str] if all(bond1_atoms == bond.atomids)][0]
                 bond2 = [bond.equ for bond in terms[terms_bond_str] if all(bond2_atoms == bond.atomids)][0]
-                angle = [ang.equ for ang in terms['angle'] if all(term.atomids == ang.atomids)][0]
+                angle = [ang.equ for ang in terms[terms_angle_str] if all(term.atomids == ang.atomids)][0]
                 # urey = (bond1**2 + bond2**2 - 2*bond1*bond2*np.cos(angle))**0.5
-                urey = np.sqrt(bond1 ** 2 + bond2 ** 2 - 2 * bond1 * bond2 * np.cos(angle))
+                urey = np.sqrt(bond1**2 + bond2**2 - 2*bond1*bond2*np.cos(angle))
                 term.equ = urey
                 unique_terms[str(term)] = urey
 
@@ -364,3 +365,12 @@ def _get_terms_bond_str(config) -> str:
         return 'morse_mp2'
     else:  # regular bond
         return 'bond'
+
+
+def _get_terms_angle_str(config) -> str:
+    if config.terms.angle:
+        return 'angle'
+    elif config.terms.poly_angle:
+        return 'poly_angle'
+    else:  # default
+        return ''

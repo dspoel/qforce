@@ -126,6 +126,8 @@ def check_wellposedness(config):
         raise Exception('Linear optimization is not valid for Morse bond potential')
     elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
         raise Exception('Morse and Morse MP bonds cannot be used at the same time')
+    elif config.terms.angle and config.terms.poly_angle:
+        raise Exception('Harmonic angle cannot be used at the same time than Poly Angle terms')
     elif config.terms.morse_mp and config.terms.morse_mp2:
         raise Exception('Cannot run two versions of Morse MP at the same time')
     elif config.opt.noise < 0 or config.opt.noise > 1:
