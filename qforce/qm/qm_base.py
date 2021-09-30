@@ -26,7 +26,7 @@ class ReadABC(ABC):
         ...
 
     @staticmethod
-    def _read_fchk_file(fchk_file):
+    def _read_fchk_file(fchk_file: str) -> tuple[int, int, int, np.ndarray, np.ndarray, np.ndarray]:
         n_atoms, charge, multiplicity, elements, coords, hessian = None, None, None, [], [], []
         with open(fchk_file, "r", encoding='utf-8') as file:
             for line in file:

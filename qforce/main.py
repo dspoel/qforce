@@ -1,4 +1,5 @@
 import sys
+from types import SimpleNamespace
 
 from .polarize import polarize
 from .initialize import initialize
@@ -13,8 +14,8 @@ from .hessian import fit_hessian, fit_hessian_nl
 from .misc import check_continue
 
 
-def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psave=None,
-               process_file=None, presets=None):
+def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None, psave: str=None,
+               process_file: str=None, presets=None) -> None:
     #### Initialization phase ####
     print('\n#### INITIALIZATION PHASE ####\n')
     config, job = initialize(input_arg, config, presets)
@@ -112,7 +113,7 @@ def run_hessian_fitting_for_external(job_dir, qm_data, ext_q=None, ext_lj=None,
     return mol.terms
 
 
-def print_outcome(job_dir):
+def print_outcome(job_dir: str) -> None:
     print(f'Output files can be found in the directory: {job_dir}.')
     print('- Q-Force force field parameters in GROMACS format (gas.gro, gas.itp, gas.top).')
     print('- QM vs MM vibrational frequencies, pre-dihedral fitting (frequencies.txt,'
@@ -121,7 +122,7 @@ def print_outcome(job_dir):
     print('- QM vs MM dihedral profiles (if any) in "fragments" folder as ".pdf" files.')
 
 
-def check_wellposedness(config):
+def check_wellposedness(config: SimpleNamespace) -> None:
     if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
         raise Exception('Linear optimization is not valid for Morse bond potential')
     elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):

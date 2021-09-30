@@ -1,5 +1,6 @@
 import os
 import sys
+from types import SimpleNamespace
 
 LOGO = """
           ____         ______
@@ -28,12 +29,12 @@ LOGO_SEMICOL = """
 """
 
 
-def check_if_file_exists(file):
+def check_if_file_exists(file: str) -> str:
     if not os.path.exists(file) and not os.path.exists(f'{file}_qforce'):
         sys.exit(f'ERROR: "{file}" does not exist.\n')
     return file
 
-def check_continue(config):
+def check_continue(config: SimpleNamespace) -> None:
     if config.general.debug_mode:
         x = input('\nDo you want to continue y/n? ')
         if x not in ['yes', 'y', '']:
