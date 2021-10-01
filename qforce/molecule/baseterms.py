@@ -1,3 +1,7 @@
+from types import SimpleNamespace
+from .topology import Topology
+from .non_bonded import NonBonded
+
 from abc import ABC, abstractmethod
 #
 import numpy as np
@@ -87,7 +91,8 @@ class TermFactory(ABC):
 
     @classmethod
     @abstractmethod
-    def get_terms(cls, topo, non_bonded, config):
+    def get_terms(cls, topo: Topology, non_bonded: NonBonded,
+                  config: SimpleNamespace) -> list:
         """
             Args:
                 topo: Topology object, const

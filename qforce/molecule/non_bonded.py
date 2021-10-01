@@ -1,3 +1,4 @@
+from __future__ import annotations
 from types import SimpleNamespace
 from ..qm.qm_base import HessianOutput
 from .topology import Topology
@@ -14,8 +15,11 @@ from ..elements import ATOM_SYM
 
 
 class NonBonded():
-    def __init__(self, n_atoms, q, lj_types, lj_pairs, lj_1_4, lj_atomic_number, exclusions, pairs,
-                 n_excl, comb_rule, fudge_lj, fudge_q, h_cap, alpha):
+    def __init__(self, n_atoms: int, q: np.ndarray, lj_types: list[str],
+                 lj_pairs: dict[tuple[str, str], list[float, float]], lj_1_4: dict,
+                 lj_atomic_number: dict[str, int], exclusions: list, pairs: list,
+                 n_excl: int, comb_rule: int, fudge_lj: float, fudge_q: float,
+                 h_cap: str, alpha: dict):
         self.n_atoms = n_atoms
         self.q = q
         self.lj_types = lj_types
@@ -34,7 +38,7 @@ class NonBonded():
 
     @classmethod
     def from_topology(cls, config: SimpleNamespace, job: SimpleNamespace, qm_out: HessianOutput,
-                      topo: Topology, ext_q, ext_lj):
+                      topo: Topology, ext_q, ext_lj) -> NonBonded:
         comb_rule, fudge_lj, fudge_q, h_cap = set_non_bonded_props(config)
         exclusions = cls._set_exclusions_and_pairs(config.exclusions)
         pairs = cls._set_exclusions_and_pairs(config.pairs)
@@ -115,7 +119,7 @@ class NonBonded():
                    non_bonded.fudge_q, non_bonded.h_cap, alpha)
 
     @staticmethod
-    def _set_exclusions_and_pairs(value):
+    def _set_exclusions_and_pairs(value: str) -> list[list[int]]:
         selection = []
         if value:
             for line in value.split('\n'):
@@ -133,7 +137,8 @@ class NonBonded():
         return selection
 
 
-def get_external_lennard_jones(config, topo, q, job, ext_lj):
+def get_external_lennard_jones(config: SimpleNamespace, topo: Topology, q: np.ndarray,
+                               job: SimpleNamespace, ext_lj) -> list[str]:
     if config.lennard_jones == 'gromos_auto':
         lj_types = determine_gromos_atom_types(topo, q)
     elif config.lennard_jones == 'opls_auto':
@@ -165,7 +170,7 @@ def get_external_lennard_jones(config, topo, q, job, ext_lj):
     return lj_types
 
 
-def set_non_bonded_props(config):
+def set_non_bonded_props(config: SimpleNamespace) -> tuple[int, float, float, str]:
     if config._d4 == 'd4':
         comb_rule = 2
         fudge_lj, fudge_q = 1.0, 1.0
@@ -229,7 +234,7 @@ class Neighbors(list):
         return len(matched)
 
 
-def determine_opls_atom_types(topo, q):
+def determine_opls_atom_types(topo: Topology, q: np.ndarray) -> list[str]:
     """
     Carbon
     #CA (aromatic): opls_145  ---- LigParGen puts C=N a CA atomtype, why???
@@ -345,7 +350,7 @@ def determine_opls_atom_types(topo, q):
     return a_types
 
 
-def determine_gromos_atom_types(topo, q):
+def determine_gromos_atom_types(topo: Topology, q: np.ndarray) -> list[str]:
     print('NOTE: Automatic atom-type determination (used only for LJ interactions) is new. \n'
           '      Double check your atom types or enter them manually.\n')
     a_types = []
@@ -401,7 +406,8 @@ def determine_gromos_atom_types(topo, q):
     return a_types
 
 
-def set_polar(q, topo, config, job):
+def set_polar(q: np.ndarray, topo: Topology, config: SimpleNamespace,
+              job: SimpleNamespace) -> dict:
     polar_dict = {1: 0.45330, 6: 1.30300, 7: 0.98840, 8: 0.83690, 16: 2.47400}
     # polar_dict = { 1: 0.000413835,  6: 0.00145,  7: 0.000971573,
     #               8: 0.000851973,  9: 0.000444747, 16: 0.002474448,
@@ -455,7 +461,10 @@ def set_qforce_lennard_jones(topo, comb_rule, lj_a, lj_b):
     return lj_types, lj_pairs
 
 
-def set_external_lennard_jones(job, config, comb_rule, lj_types, ext_lj, h_cap):
+def set_external_lennard_jones(job: SimpleNamespace, config: SimpleNamespace,
+                               comb_rule: int, lj_types: list[str], ext_lj,
+                               h_cap: str) -> tuple[dict[tuple[str, str], list[float, float]],
+                                                    dict, dict[str, int]]:
     lj_pairs, lj_1_4 = {}, {}
 
     if config.lennard_jones == 'ext' and ext_lj:
@@ -496,7 +505,8 @@ def set_external_lennard_jones(job, config, comb_rule, lj_types, ext_lj, h_cap):
     return lj_pairs, lj_1_4, atomic_numbers
 
 
-def get_c6_c12_for_diff_comb_rules(comb_rule, params):
+def get_c6_c12_for_diff_comb_rules(comb_rule: int,
+                                   params: list[float, float]) -> list[float, float]:
     if comb_rule == 1:
         c6 = params[0] * 1e6
         c12 = params[1] * 1e12
@@ -509,7 +519,8 @@ def get_c6_c12_for_diff_comb_rules(comb_rule, params):
     return [c6, c12]
 
 
-def use_combination_rule(param1, param2, comb_rule):
+def use_combination_rule(param1: list[float, float], param2: list[float, float],
+                         comb_rule: int) -> tuple[float, float]:
     b = (param1[1] * param2[1])**0.5
     if comb_rule in [1, 3]:
         a = (param1[0] * param2[0])**0.5
@@ -548,7 +559,9 @@ def set_external_lennard_jones_from_dict(ext_lj):
     return atom_types, nonbond_params, nonbond_1_4, atomic_numbers
 
 
-def read_ext_nonbonded_file(config, md_data):
+def read_ext_nonbonded_file(config: SimpleNamespace,
+                            md_data: str) -> tuple[dict[str, list[float, float]],
+                                                   dict, dict, dict[str, int]]:
     atom_types, nonbond_params, nonbond_1_4, atomic_numbers = {}, {}, {}, {}
 
     if config.lennard_jones == 'ext':
@@ -592,7 +605,7 @@ def read_ext_nonbonded_file(config, md_data):
         return atom_types, nonbond_params, nonbond_1_4, atomic_numbers
 
 
-def average_equivalent_terms(topo, terms):
+def average_equivalent_terms(topo: Topology, terms: list[np.ndarray]) -> list[np.ndarray]:
     avg_terms = []
     for term in terms:
         term = np.array(term)
@@ -602,7 +615,7 @@ def average_equivalent_terms(topo, terms):
     return avg_terms
 
 
-def sum_charges_to_qtotal(topo, q):
+def sum_charges_to_qtotal(topo: Topology, q: np.ndarray) -> np.ndarray:
     total = q.sum()
     q_integer = int(round(total))
 
@@ -715,7 +728,7 @@ def calc_lj(r, c6, c12):
     return c12/r**12 - c6/r**6
 
 
-def set_polar_not_scale_c6(value):
+def set_polar_not_scale_c6(value: str) -> list[str]:
     if value:
         not_scale = value.split()
     else:
