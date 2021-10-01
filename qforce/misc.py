@@ -28,14 +28,21 @@ LOGO_SEMICOL = """
 ;            ==============================
 """
 
+PHASES = ['Initialization', 'Polarization', 'QM', 'Molecule', 'Hessian Fitting',
+          'Flexible Dihedral Scan', 'Calculate Frequencies', 'Calculate Force Field']
+
 
 def check_if_file_exists(file: str) -> str:
     if not os.path.exists(file) and not os.path.exists(f'{file}_qforce'):
         sys.exit(f'ERROR: "{file}" does not exist.\n')
     return file
 
-def check_continue(config: SimpleNamespace) -> None:
+def print_phase_header(phase: str) -> None:
+    print(f'\n#### {phase.upper()} PHASE ####\n')
+
+def check_continue(config: SimpleNamespace, prev: str, next: str) -> None:
     if config.general.debug_mode:
+        print(f'\n{prev.upper()} phase completed. Next up: {next.upper()} phase.')
         x = input('\nDo you want to continue y/n? ')
         if x not in ['yes', 'y', '']:
             print()

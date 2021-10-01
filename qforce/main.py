@@ -11,13 +11,16 @@ from .fragment import fragment
 from .dihedral_scan import DihedralScan
 from .frequencies import calc_qm_vs_md_frequencies
 from .hessian import fit_hessian, fit_hessian_nl
-from .misc import check_continue
+from .misc import check_continue, print_phase_header, PHASES
 
 
 def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None, psave: str=None,
                process_file: str=None, presets=None) -> None:
+    # Phase count
+    pc = 0
+
     #### Initialization phase ####
-    print('\n#### INITIALIZATION PHASE ####\n')
+    print_phase_header(PHASES[pc])
     config, job = initialize(input_arg, config, presets)
     print('Config:')
     print(config, '\n')
@@ -35,63 +38,71 @@ def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput
 
     check_wellposedness(config)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Polarization phase ####
-    print('\n#### POLARIZATION PHASE ####\n')
+    print_phase_header(PHASES[pc])
     if config.ff._polarize:
         polarize(job, config.ff)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### QM phase ####
-    print('\n#### QM PHASE ####\n')
+    print_phase_header(PHASES[pc])
     qm = QM(job, config.qm)
     qm_hessian_out = qm.read_hessian()
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Molecule phase ####
-    print('\n#### MOLECULE PHASE ####\n')
+    print_phase_header(PHASES[pc])
     mol = Molecule(config, job, qm_hessian_out, ext_q, ext_lj)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Hessian fitting phase ####
-    print('\n#### HESSIAN FITTING PHASE ####\n')
+    print_phase_header(PHASES[pc])
     md_hessian = None
     if config.opt.fit_type == 'linear':
         md_hessian = fit_hessian(config, mol, qm_hessian_out, psave)
     elif config.opt.fit_type == 'non_linear':
         md_hessian = fit_hessian_nl(config, mol, qm_hessian_out, pinput, psave, process_file)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Flexible dihedral scan phase ####
     if config.ff.scan_dihedrals:
-        print('\n#### FLEXIBLE DIHEDRAL SCAN PHASE ####\n')
+        print_phase_header(PHASES[pc])
         if len(mol.terms['dihedral/flexible']) > 0 and config.scan.do_scan:
             fragments = fragment(mol, qm, job, config)
             DihedralScan(fragments, mol, job, config)
 
-        check_continue(config)
+        check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Calculate frequencies phase ####
-    print('\n#### CALCULATE FREQUENCIES PHASE ####\n')
+    print_phase_header(PHASES[pc])
     calc_qm_vs_md_frequencies(job, qm_hessian_out, md_hessian)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Calculate Force Field phase ####
     if config.ff.compute_ff:
-        print('\n#### CALCULATE FORCE FIELD PHASE ####\n')
+        print_phase_header(PHASES[pc])
         ff = ForceField(job.name, config, mol, mol.topo.neighbors)
         ff.write_gromacs(job.dir, mol, qm_hessian_out.coords)
 
         print_outcome(job.dir)
     else:
         print('\nNo Force Field output requested...\n')
-        print('RUN COMPLETED')
+
+    print('\n\nRUN COMPLETED')
 
 
 def run_hessian_fitting_for_external(job_dir, qm_data, ext_q=None, ext_lj=None,

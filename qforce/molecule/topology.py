@@ -1,3 +1,7 @@
+from typing import Union
+from types import SimpleNamespace
+from ..qm.qm_base import HessianOutput
+
 import networkx as nx
 import numpy as np
 #
@@ -10,7 +14,7 @@ class Topology(object):
     Contains all bonding etc. information of the system
     """
 
-    def __init__(self, config, qm_out):
+    def __init__(self, config: SimpleNamespace, qm_out: HessianOutput):
         self.n_equiv = config.n_equiv
         self.elements = qm_out.elements
         self.n_atoms = len(self.elements)
@@ -30,13 +34,13 @@ class Topology(object):
         #
         self._setup(qm_out)
 
-    def _setup(self, qm_out):
+    def _setup(self, qm_out: HessianOutput) -> None:
         self._find_bonds_and_rings(qm_out)
         self._find_atom_types()
         self._find_neighbors()
         self._find_bonds_angles_dihedrals()
 
-    def _find_bonds_and_rings(self, qm_out):
+    def _find_bonds_and_rings(self, qm_out: HessianOutput) -> None:
         """Setup networkx graph """
         self.graph = nx.Graph()
         for i_idx, i_elem in enumerate(self.elements):
@@ -72,7 +76,7 @@ class Topology(object):
             self.edge(*atoms)['in_ring3'] = any(set(atoms).issubset(set(ring))
                                                 for ring in self.rings3)
 
-    def _find_atom_types(self):
+    def _find_atom_types(self) -> None:
         atom_ids = [[] for _ in range(self.n_atoms)]
 
         for i in range(self.n_atoms):
@@ -104,7 +108,7 @@ class Topology(object):
             types[self.elements[eq[0]]] += 1
         self.types = np.array(self.types, dtype='str')
 
-    def _find_neighbors(self):
+    def _find_neighbors(self) -> None:
         for i in range(self.n_atoms):
             neighbors = nx.bfs_tree(self.graph, source=i,  depth_limit=3).nodes
             for n in neighbors:
@@ -121,7 +125,7 @@ class Topology(object):
             self.n_neighbors.append(len(self.neighbors[0][i]))
         self.n_neighbors = np.array(self.n_neighbors)
 
-    def _find_bonds_angles_dihedrals(self):
+    def _find_bonds_angles_dihedrals(self) -> None:
 
         bonds, angles, dihedrals = [], [], []
 
@@ -143,8 +147,8 @@ class Topology(object):
         self.angles = angles
         self.dihedrals = dihedrals
 
-    def node(self, i):
+    def node(self, i: int) -> dict[str, Union[float, int, np.ndarray]]:
         return self.graph.nodes[i]
 
-    def edge(self, i, j):
+    def edge(self, i: int, j: int) -> dict[str, Union[np.ndarray, float, str, int]]:
         return self.graph.edges[i, j]

@@ -1,3 +1,7 @@
+from types import SimpleNamespace
+from ..qm.qm_base import HessianOutput
+from .topology import Topology
+
 import subprocess
 import numpy as np
 import pulp
@@ -29,7 +33,8 @@ class NonBonded():
         self.alpha_map = {key: i+self.n_atoms for i, key in enumerate(self.alpha.keys())}
 
     @classmethod
-    def from_topology(cls, config, job, qm_out, topo, ext_q, ext_lj):
+    def from_topology(cls, config: SimpleNamespace, job: SimpleNamespace, qm_out: HessianOutput,
+                      topo: Topology, ext_q, ext_lj):
         comb_rule, fudge_lj, fudge_q, h_cap = set_non_bonded_props(config)
         exclusions = cls._set_exclusions_and_pairs(config.exclusions)
         pairs = cls._set_exclusions_and_pairs(config.pairs)
