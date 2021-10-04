@@ -42,7 +42,8 @@ def print_phase_header(phase: str) -> None:
 
 def check_continue(config: SimpleNamespace, prev: str, next: str) -> None:
     if config.general.debug_mode:
-        print(f'\n{prev.upper()} phase completed. Next up: {next.upper()} phase.')
+        if prev and next:
+            print(f'\n{prev.upper()} phase completed. Next up: {next.upper()} phase.')
         x = input('\nDo you want to continue y/n? ')
         if x not in ['yes', 'y', '']:
             print()

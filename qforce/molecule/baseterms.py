@@ -25,33 +25,30 @@ class TermABC(ABC):
         self.typename = typename
         self._name = f"{self.name}({typename})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name
 
-    def set_idx(self, idx):
+    def set_idx(self, idx: int) -> None:
         self.idx = idx
 
     def do_force(self, crd, force):
         """force calculation with given geometry"""
         return self._calc_forces(crd, force, self.fconst)
 
-    def do_fitting(self, crd, forces, index=0, params=None):
+    def do_fitting(self, crd: np.ndarray, forces: np.ndarray, index: int=0,
+                   params: np.ndarray=None) -> None:
         """compute fitting contributions"""
         # self._calc_forces(crd, forces[self.idx], np.ones(self.n_params))
         if params is None:  # Linear least squares
-            # for i in range(self.n_params):
-            #     fconst = 0.001*np.ones(self.n_params)
-            #     fconst[i] = 1.0
-            #     self._calc_forces(crd, forces[index+i], fconst)
             self._calc_forces(crd, forces[self.idx], np.ones(self.n_params))
         else:  # Non-linear least squares
             self._calc_forces(crd, forces[self.idx], params[index:index+self.n_params])
 
     @abstractmethod
-    def _calc_forces(self, crd, force, fconst):
+    def _calc_forces(self, crd: np.ndarray, force: np.ndarray, fconst: np.ndarray):
         """Perform actual force computation"""
 
     @classmethod
