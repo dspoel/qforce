@@ -224,7 +224,6 @@ def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
             print(f'Term {term} with idx {term.idx} has fconst {term.fconst}')
 
     # If psave, write fit to .json
-    print(f'srtd_terms: {type(sorted(mol.terms, key=lambda trm: trm.idx))}\n{sorted(mol.terms, key=lambda trm: trm.idx)}')
     if psave is not None:
         print(f'Writing fit to {psave}...')
         write_opt_params(psave, sorted(mol.terms, key=lambda trm: trm.idx), mol)
