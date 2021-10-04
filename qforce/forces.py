@@ -219,7 +219,7 @@ def convert_to_inversion_rb(fconst, phi0):
 
 
 @jit("f8(f8[:], f8[:])", nopython=True)
-def dot_prod(a, b):
+def dot_prod(a: np.ndarray, b: np.ndarray) -> float:
     x = a[0]*b[0]
     y = a[1]*b[1]
     z = a[2]*b[2]
@@ -273,14 +273,14 @@ def calc_pairs(coords, atoms, params, force):
 
 
 @jit(nopython=True)
-def get_dist(coord1, coord2):
+def get_dist(coord1: np.ndarray, coord2: np.ndarray) -> tuple[np.ndarray, float]:
     vec = coord1 - coord2
     r = norm(vec)
     return vec, r
 
 
 @jit(nopython=True)
-def get_angle(coords):
+def get_angle(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray, float, float]:
     vec12, r12 = get_dist(coords[0], coords[1])
     vec32, r32 = get_dist(coords[2], coords[1])
     dot = np.dot(vec12/r12, vec32/r32)
@@ -292,7 +292,7 @@ def get_angle(coords):
 
 
 @jit(nopython=True)
-def get_angle_from_vectors(vec1, vec2):
+def get_angle_from_vectors(vec1: np.ndarray, vec2: np.ndarray) -> float:
     dot = np.dot(vec1/norm(vec1), vec2/norm(vec2))
     if dot > 1.0:
         dot = 1.0
@@ -302,7 +302,8 @@ def get_angle_from_vectors(vec1, vec2):
 
 
 @jit(nopython=True)
-def get_dihed(coords):
+def get_dihed(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray,
+                                           np.ndarray, np.ndarray, np.ndarray]:
     vec12, r12 = get_dist(coords[0], coords[1])
     vec32, r32 = get_dist(coords[2], coords[1])
     vec34, r34 = get_dist(coords[2], coords[3])
@@ -315,7 +316,7 @@ def get_dihed(coords):
 
 
 @jit("f8[:](f8[:], f8[:])", nopython=True)
-def cross_prod(a, b):
+def cross_prod(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     c = np.empty(3, dtype=np.double)
     c[0] = a[1]*b[2] - a[2]*b[1]
     c[1] = a[2]*b[0] - a[0]*b[2]
@@ -324,8 +325,9 @@ def cross_prod(a, b):
 
 
 @jit("f8(f8[:])", nopython=True)
-def norm(vec):
-    return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
+def norm(vec: np.ndarray) -> float:
+    # return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
+    return math.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
 
 
 # @jit(nopython=True)

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, TextIO
 from types import SimpleNamespace
 
 import os
@@ -69,8 +69,9 @@ vib_scaling = 1.0 :: float
         self.software.write().hessian(file, self.job.name, self.config, coords, atnums)
 
     @scriptify
-    def write_scan(self, file, scan_id, coords, atnums, scanned_atoms, start_angle, charge,
-                   multiplicity):
+    def write_scan(self, file: TextIO, scan_id: str, coords: np.ndarray, atnums: list[int],
+                   scanned_atoms: list[int], start_angle: float, charge: int,
+                   multiplicity: int) -> None:
         self.software.write().scan(file, scan_id, self.config, coords, atnums, scanned_atoms,
                                    start_angle, charge, multiplicity)
 

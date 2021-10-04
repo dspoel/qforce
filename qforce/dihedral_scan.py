@@ -1,3 +1,8 @@
+from types import SimpleNamespace
+from .fragment import Fragment
+from .molecule.molecule import Molecule
+from .molecule.dihedral_terms import DihedralBaseTerm
+
 import subprocess
 import os
 import shutil
@@ -62,7 +67,8 @@ plot_fit = no :: bool
 frag_lib = ~/qforce_fragments :: folder
 """
 
-    def __init__(self, fragments, mol, job, all_config):
+    def __init__(self, fragments: list[Fragment], mol: Molecule, job: SimpleNamespace,
+                 all_config: SimpleNamespace):
         self.frag_dir = job.frag_dir
         self.job_name = job.name
         self.mdp_file = f'{job.md_data}/default.mdp'
@@ -76,7 +82,10 @@ frag_lib = ~/qforce_fragments :: folder
                                                    weights)
         self.finalize_results(fragments, final_energy, all_dih_terms, params)
 
-    def arrange_data(self, mol, fragments):
+    def arrange_data(self, mol: Molecule,
+                     fragments: list[Fragment]) -> tuple[list[Fragment],
+                                                         list[DihedralBaseTerm],
+                                                         np.array]:
         all_dih_terms, weights = [], []
 
         for term in mol.terms['dihedral/flexible']:
@@ -200,7 +209,7 @@ frag_lib = ~/qforce_fragments :: folder
         return final_energy, params
 
     @staticmethod
-    def move_capping_atoms(fragments):
+    def move_capping_atoms(fragments: list[Fragment]) -> None:
         for frag in fragments:
             for cap in frag.caps:
                 for coord in frag.coords:
