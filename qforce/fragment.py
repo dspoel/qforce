@@ -1,3 +1,8 @@
+from __future__ import annotations
+from types import SimpleNamespace
+from .molecule.molecule import Molecule
+from .qm.qm import QM
+
 import networkx as nx
 import os
 import hashlib
@@ -19,7 +24,7 @@ Prompt a warning when if any point has an error larger than 2kJ/mol.
 """
 
 
-def fragment(mol, qm, job, config):
+def fragment(mol: Molecule, qm: QM, job: SimpleNamespace, config: SimpleNamespace) -> list[Fragment]:
     fragments = []
     unique_dihedrals = {}
 
@@ -43,7 +48,7 @@ def fragment(mol, qm, job, config):
     return fragments
 
 
-def reset_data_files(frag_dir):
+def reset_data_files(frag_dir: str) -> None:
     for data in ['missing', 'have']:
         data_path = f'{frag_dir}/{data}'
         if os.path.exists(data_path):
@@ -75,7 +80,8 @@ class Fragment():
     For now necessary because of the mapping - but should be fixed at some point
     """
 
-    def __init__(self, job, config, mol, qm, scanned_atomids, name):
+    def __init__(self, job: SimpleNamespace, config: SimpleNamespace, mol: Molecule,
+                 qm: QM, scanned_atomids: np.ndarray, name: str):
         self.central_atoms = tuple(scanned_atomids[1:3])
         self.scanned_atomids = scanned_atomids
         self.atomids = list(scanned_atomids[1:3])
