@@ -11,7 +11,7 @@ from .fragment import fragment
 from .dihedral_scan import DihedralScan
 from .frequencies import calc_qm_vs_md_frequencies
 from .hessian import fit_hessian, fit_hessian_nl
-from .misc import check_continue, print_phase_header, PHASES
+from .misc import check_continue, print_phase_header, check_wellposedness, PHASES
 
 
 def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None, psave: str=None,
@@ -131,18 +131,3 @@ def print_outcome(job_dir: str) -> None:
           ' frequencies.pdf).')
     print('- Vibrational modes which can be visualized in VMD (frequencies.nmd).')
     print('- QM vs MM dihedral profiles (if any) in "fragments" folder as ".pdf" files.')
-
-
-def check_wellposedness(config: SimpleNamespace) -> None:
-    if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
-        raise Exception('Linear optimization is not valid for Morse bond potential')
-    elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
-        raise Exception('Morse and Morse MP bonds cannot be used at the same time')
-    elif config.terms.angle and config.terms.poly_angle:
-        raise Exception('Harmonic angle cannot be used at the same time than Poly Angle terms')
-    elif config.terms.morse_mp and config.terms.morse_mp2:
-        raise Exception('Cannot run two versions of Morse MP at the same time')
-    elif config.opt.noise < 0 or config.opt.noise > 1:
-        raise Exception('Noise must be in range [0, 1]')
-    else:
-        print('Configuration is valid!')
