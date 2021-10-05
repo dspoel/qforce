@@ -1,6 +1,7 @@
 import os
 import sys
 from types import SimpleNamespace
+from typing import Union
 
 LOGO = """
           ____         ______
@@ -32,7 +33,7 @@ PHASES = ['Initialization', 'Polarization', 'QM', 'Molecule', 'Hessian Fitting',
           'Flexible Dihedral Scan', 'Calculate Frequencies', 'Calculate Force Field']
 
 
-def check_if_file_exists(file: str) -> str:
+def check_if_file_exists(file: str) -> Union[str, None]:
     if not os.path.exists(file) and not os.path.exists(f'{file}_qforce'):
         sys.exit(f'ERROR: "{file}" does not exist.\n')
     return file
