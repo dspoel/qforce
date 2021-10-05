@@ -1,3 +1,7 @@
+from types import SimpleNamespace
+from .molecule.molecule import Molecule
+from .molecule.non_bonded import NonBonded
+
 import numpy as np
 #
 from .elements import ATOM_SYM, ATOMMASS
@@ -7,7 +11,8 @@ from .misc import LOGO_SEMICOL
 
 
 class ForceField():
-    def __init__(self, job_name, config, mol, neighbors, exclude_all=[]):
+    def __init__(self, job_name: str, config: SimpleNamespace, mol: Molecule,
+                 neighbors: list[list[list[int]]], exclude_all: list=[]):
         self.polar = config.ff._polar
         self.mol_name = job_name
         self.n_atoms = mol.n_atoms
@@ -303,7 +308,8 @@ class ForceField():
                 itp.write(("{} "*len(exclusion)).format(*exclusion))
                 itp.write("\n")
 
-    def make_pairs(self, neighbors, non_bonded):
+    def make_pairs(self, neighbors: list[list[list[int]]],
+                   non_bonded: NonBonded) -> list[list[int]]:
         pairs, polar_pairs = [], []
 
         for pair in non_bonded.pairs:
@@ -327,7 +333,8 @@ class ForceField():
 
         return pairs+polar_pairs
 
-    def make_exclusions(self, non_bonded, neighbors, exclude_all):
+    def make_exclusions(self, non_bonded: NonBonded, neighbors: list[list[list[int]]],
+                        exclude_all: list) -> list[list]:
         exclusions = [[] for _ in range(self.n_atoms)]
 
         # input exclusions
@@ -369,7 +376,7 @@ class ForceField():
 
         return exclusions
 
-    def get_atom_names(self):
+    def get_atom_names(self) -> list[str]:
         atom_names = []
         atom_dict = {}
 
@@ -391,7 +398,7 @@ class ForceField():
                 phi = np.degrees(restraint[1])
                 itp.write(f'{a1:>5}{a2:>5}{a3:>5}{a4:>5}{1:>5} {phi:>10.4f}  0.0  {fc}\n')
 
-    def set_charge(self, non_bonded):
+    def set_charge(self, non_bonded: NonBonded) -> np.ndarray:
         q = np.copy(non_bonded.q)
         if self.polar:
             q[list(non_bonded.alpha_map.keys())] += 8
