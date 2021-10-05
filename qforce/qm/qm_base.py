@@ -26,7 +26,7 @@ class ReadABC(ABC):
         ...
 
     @staticmethod
-    def _read_fchk_file(fchk_file):
+    def _read_fchk_file(fchk_file: str) -> tuple[int, int, int, np.ndarray, np.ndarray, np.ndarray]:
         n_atoms, charge, multiplicity, elements, coords, hessian = None, None, None, [], [], []
         with open(fchk_file, "r", encoding='utf-8') as file:
             for line in file:
@@ -127,9 +127,9 @@ def scriptify(writer):
 
 
 class HessianOutput():
-    def __init__(self, vib_scaling, n_atoms, charge, multiplicity, elements, coords, hessian,
-                 n_bonds, b_orders, lone_e, point_charges):
-
+    def __init__(self, vib_scaling: float, n_atoms: int, charge: int, multiplicity: int,
+                 elements: np.ndarray, coords: np.ndarray, hessian: np.ndarray,
+                 n_bonds: list, b_orders: list, lone_e: np.ndarray, point_charges: list):
         self.n_atoms = self.check_type(n_atoms, 'n_atoms', int)
         self.charge = self.check_type(charge, 'charge', int)
         self.multiplicity = self.check_type(multiplicity, 'n_atoms', int)
@@ -144,14 +144,14 @@ class HessianOutput():
                                                        (n_atoms,))
 
     @staticmethod
-    def check_type(value, name, expected_type):
+    def check_type(value, name: str, expected_type):
         if not isinstance(value, expected_type):
             sys.exit(f'WARNING: A valid "{name}" property was not found in the hessian output'
                      ' file(s). Exiting...\n\n')
         return value
 
     @staticmethod
-    def check_type_and_shape(value, name, expected_type, expected_shape):
+    def check_type_and_shape(value, name: str, expected_type, expected_shape: tuple[int]):
         value = np.asarray(value)
         if value.size == 0:
             sys.exit(f'ERROR: No data found in the QM Hessian output file(s) for "{name}".'
@@ -166,7 +166,7 @@ class HessianOutput():
 
 
 class ScanOutput():
-    def __init__(self, file,  n_steps, n_atoms, coords, angles, energies, charges):
+    def __init__(self, file, n_steps, n_atoms, coords, angles, energies, charges):
         self.n_atoms = n_atoms
         self.n_steps = n_steps
         angles, energies, coords, self.charges, self.mismatch = self.check_shape(angles, energies,

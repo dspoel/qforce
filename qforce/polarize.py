@@ -1,8 +1,9 @@
 import numpy as np
 import sys
+from types import SimpleNamespace
 
 
-def polarize(inp, path):
+def polarize(inp: SimpleNamespace, path: SimpleNamespace) -> None:
     """
     Generate the polarizable versions of the input forcefield
     for both GRO and ITP files
@@ -42,7 +43,7 @@ def polarize(inp, path):
     sys.exit()
 
 
-def read_gro(gro_file):
+def read_gro(gro_file: str):
     coords, velocities = [], []
     with open(gro_file, "r") as gro:
         gro.readline()
@@ -62,7 +63,7 @@ def read_gro(gro_file):
     return np.array(coords), np.array(velocities), gro_natoms, box_dim
 
 
-def read_itp(itp_file):
+def read_itp(itp_file: str):
     atoms = []
     polar_atoms = {}
     max_resnr = 0
@@ -94,7 +95,7 @@ def read_itp(itp_file):
     return atoms, len(atoms), max_resnr, polar_atoms
 
 
-def write_gro(inp, atoms, mol_natoms, n_mols, coords, velocities, box_dim, gro_file):
+def write_gro(inp, atoms, mol_natoms, n_mols, coords, velocities, box_dim, gro_file: str) -> None:
     with open(gro_file, "w") as gro:
         gro.write(f"{inp.job_name} - polarized\n")
         gro.write(f"{int(mol_natoms*n_mols)}\n")

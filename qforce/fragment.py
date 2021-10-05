@@ -1,3 +1,9 @@
+from __future__ import annotations
+from types import SimpleNamespace
+from typing import Union
+from .molecule.molecule import Molecule
+from .qm.qm import QM
+
 import networkx as nx
 import os
 import hashlib
@@ -19,7 +25,7 @@ Prompt a warning when if any point has an error larger than 2kJ/mol.
 """
 
 
-def fragment(mol, qm, job, config):
+def fragment(mol: Molecule, qm: QM, job: SimpleNamespace, config: SimpleNamespace) -> list[Fragment]:
     fragments = []
     unique_dihedrals = {}
 
@@ -43,14 +49,15 @@ def fragment(mol, qm, job, config):
     return fragments
 
 
-def reset_data_files(frag_dir):
+def reset_data_files(frag_dir: str) -> None:
     for data in ['missing', 'have']:
         data_path = f'{frag_dir}/{data}'
         if os.path.exists(data_path):
             os.remove(data_path)
 
 
-def check_and_notify(job, config, n_unique, n_have):
+def check_and_notify(job: SimpleNamespace, config: SimpleNamespace, n_unique: int,
+                     n_have: int) -> None:
     n_missing = n_unique - n_have
     if n_unique == 0:
         print('There are no flexible dihedrals.')
@@ -75,7 +82,8 @@ class Fragment():
     For now necessary because of the mapping - but should be fixed at some point
     """
 
-    def __init__(self, job, config, mol, qm, scanned_atomids, name):
+    def __init__(self, job: SimpleNamespace, config: SimpleNamespace, mol: Molecule,
+                 qm: QM, scanned_atomids: np.ndarray, name: str):
         self.central_atoms = tuple(scanned_atomids[1:3])
         self.scanned_atomids = scanned_atomids
         self.atomids = list(scanned_atomids[1:3])
@@ -105,7 +113,8 @@ class Fragment():
 
         self.check_fragment(job, config.scan, mol, qm)
 
-    def check_fragment(self, job, config, mol, qm):
+    def check_fragment(self, job: SimpleNamespace, config: SimpleNamespace, mol: Molecule,
+                       qm: QM) -> None:
         self.identify_fragment(mol, config)
         self.make_fragment_graph(mol)
         self.make_fragment_identifier(config, mol, qm)
@@ -113,7 +122,9 @@ class Fragment():
         self.check_for_qm_data(job, config, mol, qm)
         self.make_fragment_terms(mol)
 
-    def check_single_ring_rules(self, mol, bond, a1, a2):
+    def check_single_ring_rules(self, mol: Molecule,
+                                bond: dict[str, Union[np.ndarray, float, int, str, bool]],
+                                a1: int, a2: int) -> bool:
         ring = [ring for ring in mol.topo.rings if {a1, a2}.issubset(ring)][0]
         n_atoms_in_ring = sum([atom in self.atomids for atom in ring])
 
@@ -125,7 +136,7 @@ class Fragment():
             not_breakable = False
         return not_breakable
 
-    def identify_fragment(self, mol, config):
+    def identify_fragment(self, mol: Molecule, config: SimpleNamespace) -> None:
         n_neigh, n_cap = 0, 0
         possible_h_caps = {i: [] for i in range(mol.n_atoms)}
         next_neigh = [[a, n] for a in self.atomids for n
@@ -171,7 +182,7 @@ class Fragment():
             #     if h not in self.remove_non_bonded:
             #         self.remove_non_bonded.append(h)
 
-    def make_fragment_graph(self, mol):
+    def make_fragment_graph(self, mol: Molecule) -> None:
         self.map_mol_to_frag = {self.atomids[i]: i for i in range(self.n_atoms_without_cap)}
         self.scanned_atomids = [self.map_mol_to_frag[a] for a in self.scanned_atomids]
         self.elements = [mol.elements[idx] for idx in self.atomids+[cap['idx'] for cap in
@@ -203,7 +214,7 @@ class Fragment():
             cap['idx'] = self.map_mol_to_frag[cap['idx']]
             cap['connected'] = self.map_mol_to_frag[cap['connected']]
 
-    def make_fragment_identifier(self, config, mol, qm):
+    def make_fragment_identifier(self, config: SimpleNamespace, mol: Molecule, qm: QM) -> None:
         atom_ids = [[], []]
         comp_dict = {i: 0 for i in set(self.elements[:self.n_atoms_without_cap])}
         if 1 not in comp_dict.keys() and len(self.cap) > 0:
@@ -242,7 +253,7 @@ class Fragment():
         frag_id = f"{s1}{s2}_{composition}_{frag_hash}"
         self.hash = frag_id = frag_id.replace('(', '-').replace(',', '').replace(')', '')
 
-    def check_for_fragment(self, job, config, qm):
+    def check_for_fragment(self, job: SimpleNamespace, config: SimpleNamespace, qm: QM) -> None:
         """
         Check if fragment exists in the database
         If not, check current fragment directory if new data is there
@@ -273,7 +284,8 @@ class Fragment():
             self.hash_idx = len(identifiers)+1
         self.id = f'{self.hash}~{self.hash_idx}'
 
-    def check_new_scan_data(self, job, mol, config, qm):
+    def check_new_scan_data(self, job: SimpleNamespace, mol: Molecule, config: SimpleNamespace,
+                            qm: QM) -> None:
         files = [f for f in os.listdir(job.frag_dir) if f.startswith(self.id) and
                  f.endswith(('log', 'out'))]
 
@@ -298,7 +310,7 @@ class Fragment():
                     json.dump(qm_out.charges, file, sort_keys=True, indent=4)
                 np.save(f'{self.dir}/scancoords_{self.hash_idx}.npy', qm_out.coords)
 
-    def write_xyz(self):
+    def write_xyz(self) -> None:
         atomids = [atomid+1 for atomid in self.scanned_atomids]
         with open(f'{self.dir}/coords_{self.hash_idx}.xyz', 'w') as xyz:
             xyz.write(f'{self.n_atoms}\n')
@@ -307,7 +319,7 @@ class Fragment():
                 atom_name, [c1, c2, c3] = ATOM_SYM[data[1]['elem']], data[1]['coords']
                 xyz.write(f'{atom_name:>3s} {c1:>12.6f} {c2:>12.6f} {c3:>12.6f}\n')
 
-    def make_fragment_terms(self, mol):
+    def make_fragment_terms(self, mol: Molecule) -> None:
         map_mol_to_db = {}
         map_db_to_frag = {v: k for k, v in self.map_frag_to_db.items()}
 
@@ -350,7 +362,8 @@ class Fragment():
                                           map_mol_to_db.keys() and
                                           map_mol_to_db[neigh] < self.n_atoms])
 
-    def check_for_qm_data(self, job, config, mol, qm):
+    def check_for_qm_data(self, job: SimpleNamespace, config: SimpleNamespace, mol: Molecule,
+                          qm: QM) -> None:
         if self.has_data:
             self.qm_energies = np.loadtxt(f'{self.dir}/scandata_{self.hash_idx}', unpack=True)[1]
             self.qm_coords = np.load(f'{self.dir}/scancoords_{self.hash_idx}.npy')
@@ -371,13 +384,13 @@ class Fragment():
             if not self.has_data:
                 self.make_qm_input(job, qm)
 
-    def assign_frag_charge(self, mol, charges):
+    def assign_frag_charge(self, mol: Molecule, charges: dict[str, list[float]]) -> None:
         if self.charge_method in charges.keys() and not self.ext_charges:
             self.frag_charges = np.array(charges[self.charge_method])
             if mol.charge == 0:
                 self.frag_charges *= self.charge_scaling
 
-    def write_have_or_missing(self, job):
+    def write_have_or_missing(self, job: SimpleNamespace) -> None:
         if self.has_data:
             status = 'have'
         else:
@@ -386,7 +399,7 @@ class Fragment():
         with open(data_path, 'a+') as data_file:
             data_file.write(f'{self.id}\n')
 
-    def make_qm_input(self, job, qm):
+    def make_qm_input(self, job: SimpleNamespace, qm: QM) -> None:
         coords, atnums = [], []
         for data in sorted(self.graph.nodes.data()):
             coords.append(data[1]['coords'])

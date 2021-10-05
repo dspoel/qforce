@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import json
 
 import scipy.optimize as optimize
@@ -5,13 +7,19 @@ import numpy as np
 import noisyopt as nopt
 
 from .misc import check_continue
+from .molecule.molecule import Molecule
+from .qm.qm_base import HessianOutput
+from .molecule.terms import Terms
+from .molecule.baseterms import TermABC
 
 
-def nllsqfuncfloat(params, qm, qm_hessian, mol, sorted_terms, loss=None):
+def nllsqfuncfloat(params: np.ndarray, qm: HessianOutput, qm_hessian: np.ndarray,
+                   mol: Molecule, sorted_terms: TermABC, loss: list[float]=None) -> float:
     return 0.5 * np.sum(nllsqfunc(params, qm, qm_hessian, mol, sorted_terms, loss)**2)
 
 
-def nllsqfunc(params, qm, qm_hessian, mol, sorted_terms, loss=None):  # Residual function to minimize
+def nllsqfunc(params: np.ndarray, qm: HessianOutput, qm_hessian: np.ndarray, mol: Molecule,
+              sorted_terms: list[TermABC], loss=None) -> np.ndarray:
     hessian = []
     non_fit = []
     # print("Calculating the MD hessian matrix elements...")
@@ -38,7 +46,8 @@ def nllsqfunc(params, qm, qm_hessian, mol, sorted_terms, loss=None):  # Residual
     return residual
 
 
-def read_input_params(pinput, sorted_terms, mol):
+def read_input_params(pinput: str, sorted_terms: list[TermABC], mol: Molecule,
+                      x0: np.ndarray) -> None:
     in_file = open(pinput)
     dct = json.load(in_file)
     in_file.close()
@@ -53,7 +62,7 @@ def read_input_params(pinput, sorted_terms, mol):
             x0[index:index + term.n_params] = np.array(dct[str(term)])
 
 
-def write_opt_params(psave, sorted_terms, mol):
+def write_opt_params(psave: str, sorted_terms: list[TermABC], mol: Molecule) -> None:
     with open(psave, 'w') as f:
         dct = {}
         for term in sorted_terms:
@@ -62,7 +71,8 @@ def write_opt_params(psave, sorted_terms, mol):
         json.dump(dct, f, indent=4)
 
 
-def fit_hessian_nl(config, mol, qm, pinput, psave, process_file):
+def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
+                   pinput: str=None, psave: str=None, process_file: str=None) -> np.ndarray:
     print('Running fit_hessian_nl')
 
     qm_hessian = np.copy(qm.hessian)
@@ -80,7 +90,7 @@ def fit_hessian_nl(config, mol, qm, pinput, psave, process_file):
     # Read them from pinput if given
     if pinput is not None:
         print(f'Reading input params from {pinput}...')
-        read_input_params(pinput, sorted_terms, mol)
+        read_input_params(pinput, sorted_terms, mol, x0)
 
     # Add noise if necessary
     # np.random.seed(0)
@@ -90,7 +100,8 @@ def fit_hessian_nl(config, mol, qm, pinput, psave, process_file):
     print(f'x0: {x0}')
 
     # Get function value for x0 and ask the user if continue
-    value = 0.5 * np.sum(nllsqfunc(x0, qm, qm_hessian, mol, sorted_terms)**2)
+    value = nllsqfuncfloat(x0, qm, qm_hessian, mol, sorted_terms)
+    # value = 0.5 * np.sum(nllsqfunc(x0, qm, qm_hessian, mol, sorted_terms)**2)
     print(f'Initial loss: {value}')
     check_continue(config)
 
@@ -167,7 +178,8 @@ def fit_hessian_nl(config, mol, qm, pinput, psave, process_file):
     return full_md_hessian_1d
 
 
-def fit_hessian(config, mol, qm, psave):
+def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
+                psave: str) -> np.ndarray:
     print('Running fit_hessian')
 
     if config.opt.average == 'before':
@@ -244,7 +256,7 @@ def fit_hessian(config, mol, qm, psave):
     return full_md_hessian_1d
 
 
-def calc_hessian(coords, mol):
+def calc_hessian(coords: np.ndarray, mol: Molecule) -> np.ndarray:
     """
     Scope:
     -----
@@ -264,7 +276,7 @@ def calc_hessian(coords, mol):
     return full_hessian
 
 
-def calc_hessian_nl(coords, mol, params):
+def calc_hessian_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.ndarray:
     full_hessian = np.zeros((3*mol.topo.n_atoms, 3*mol.topo.n_atoms, mol.terms.n_fitted_terms+1))
 
     for a in range(mol.topo.n_atoms):
@@ -279,7 +291,7 @@ def calc_hessian_nl(coords, mol, params):
     return full_hessian
 
 
-def calc_forces(coords, mol):
+def calc_forces(coords: np.ndarray, mol: Molecule) -> np.ndarray:
     """
     Scope:
     ------
@@ -296,7 +308,7 @@ def calc_forces(coords, mol):
     return force
 
 
-def calc_forces_nl(coords, mol, params):
+def calc_forces_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.ndarray:
     """
     Scope:
     ------
@@ -319,10 +331,11 @@ def calc_forces_nl(coords, mol, params):
     return force
 
 
-def average_unique_minima(terms, config):
+def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
     print('Entering average_unique_minima')
     unique_terms = {}
-    trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle', 'poly_angle', 'dihedral/inversion']
+    trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
+            'poly_angle', 'dihedral/inversion']
     averaged_terms = [x for x in trms if config.terms.__dict__[x]]
     print(f'Averaged terms: {averaged_terms}')
     for name in averaged_terms:
@@ -356,7 +369,7 @@ def average_unique_minima(terms, config):
     print('Leaving average_unique_minima')
 
 
-def _get_terms_bond_str(config) -> str:
+def _get_terms_bond_str(config: SimpleNamespace) -> str:
     if config.terms.morse:
         return 'morse'
     elif config.terms.morse_mp:
@@ -367,7 +380,7 @@ def _get_terms_bond_str(config) -> str:
         return 'bond'
 
 
-def _get_terms_angle_str(config) -> str:
+def _get_terms_angle_str(config: SimpleNamespace) -> str:
     if config.terms.angle:
         return 'angle'
     elif config.terms.poly_angle:

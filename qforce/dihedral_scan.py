@@ -1,3 +1,8 @@
+from types import SimpleNamespace
+from .fragment import Fragment
+from .molecule.molecule import Molecule
+from .molecule.dihedral_terms import DihedralBaseTerm
+
 import subprocess
 import os
 import shutil
@@ -62,7 +67,8 @@ plot_fit = no :: bool
 frag_lib = ~/qforce_fragments :: folder
 """
 
-    def __init__(self, fragments, mol, job, all_config):
+    def __init__(self, fragments: list[Fragment], mol: Molecule, job: SimpleNamespace,
+                 all_config: SimpleNamespace):
         self.frag_dir = job.frag_dir
         self.job_name = job.name
         self.mdp_file = f'{job.md_data}/default.mdp'
@@ -76,7 +82,10 @@ frag_lib = ~/qforce_fragments :: folder
                                                    weights)
         self.finalize_results(fragments, final_energy, all_dih_terms, params)
 
-    def arrange_data(self, mol, fragments):
+    def arrange_data(self, mol: Molecule,
+                     fragments: list[Fragment]) -> tuple[list[Fragment],
+                                                         list[DihedralBaseTerm],
+                                                         np.array]:
         all_dih_terms, weights = [], []
 
         for term in mol.terms['dihedral/flexible']:
@@ -112,7 +121,8 @@ frag_lib = ~/qforce_fragments :: folder
 
         return fragments, all_dih_terms, np.array(weights)
 
-    def finalize_results(self, fragments, final_energy, all_dih_terms, params):
+    def finalize_results(self, fragments: list[Fragment], final_energy: np.ndarray,
+                         all_dih_terms: list[DihedralBaseTerm], params: np.ndarray) -> None:
         sum_scans = 0
         bad_fits = []
 
@@ -149,7 +159,9 @@ frag_lib = ~/qforce_fragments :: folder
                 print(f'         - {bad_fit}')
             print('         Please check manually to see if you find the accuracy satisfactory.\n')
 
-    def scan_dihedrals(self, fragments, mol, all_config, all_dih_terms, weights):
+    def scan_dihedrals(self, fragments: list[Fragment], mol: Molecule, all_config: SimpleNamespace,
+                       all_dih_terms: list[DihedralBaseTerm],
+                       weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         for n_run in range(self.config.n_dihed_scans):
             energy_diffs, md_energies = [], []
             for n_fit, frag in enumerate(fragments, start=1):
@@ -200,7 +212,7 @@ frag_lib = ~/qforce_fragments :: folder
         return final_energy, params
 
     @staticmethod
-    def move_capping_atoms(fragments):
+    def move_capping_atoms(fragments: list[Fragment]) -> None:
         for frag in fragments:
             for cap in frag.caps:
                 for coord in frag.coords:
@@ -208,7 +220,8 @@ frag_lib = ~/qforce_fragments :: folder
                     new_vec = vec / dist * cap['b_length']
                     coord[cap['idx']] = coord[cap['connected']] + new_vec
 
-    def scan_dihed_qforce(self, all_config, frag, scan_dir, mol, n_run, nsteps=1000):
+    def scan_dihed_qforce(self, all_config: SimpleNamespace, frag: Fragment, scan_dir: str,
+                          mol: Molecule, n_run: int, nsteps: int=1000) -> np.ndarray:
         md_energies = []
 
         for i, coord in enumerate(frag.coords):
@@ -226,7 +239,8 @@ frag_lib = ~/qforce_fragments :: folder
             frag.coords[i] = coords
         return np.array(md_energies)
 
-    def scan_dihed_gromacs(self, all_config, frag, scan_dir, mol, n_run):
+    def scan_dihed_gromacs(self, all_config: SimpleNamespace, frag: Fragment,
+                           scan_dir: str, mol: Molecule, n_run: int) -> np.ndarray:
         md_energies = []
 
         ff = ForceField(self.job_name, all_config, frag, frag.neighbors,
@@ -252,7 +266,7 @@ frag_lib = ~/qforce_fragments :: folder
         return np.array(md_energies)
 
     @staticmethod
-    def calc_fit_angles(frag, coords):
+    def calc_fit_angles(frag: Fragment, coords: np.ndarray) -> None:
         for term in frag.fit_terms:
             term['angles'].append(get_dihed(coords[term['atomids']])[0])
 
@@ -273,7 +287,8 @@ frag_lib = ~/qforce_fragments :: folder
         return restraints
 
     @staticmethod
-    def fit_dihedrals(fragments, energy_diffs, weights, all_dih_terms):
+    def fit_dihedrals(fragments: list[Fragment], energy_diffs: list[float], weights: np.ndarray,
+                      all_dih_terms: list[DihedralBaseTerm]) -> tuple[np.ndarray, np.ndarray]:
         energy_diffs = np.array(energy_diffs)
         n_total_scans = energy_diffs.size
         matrix = calc_multi_rb_matrix(fragments, all_dih_terms, n_total_scans)
@@ -318,7 +333,8 @@ frag_lib = ~/qforce_fragments :: folder
         sym_profile -= sym_profile.min()
         return sym_angle, sym_profile
 
-    def plot_results(self, frag, md_energies, title, r_squared=None):
+    def plot_results(self, frag: Fragment, md_energies: np.ndarray, title: str,
+                     r_squared: float=None) -> None:
         angles_deg = np.degrees(frag.qm_angles)
         width, height = plt.figaspect(0.6)
         f = plt.figure(figsize=(width, height), dpi=300)
@@ -335,7 +351,8 @@ frag_lib = ~/qforce_fragments :: folder
         f.savefig(f"{self.frag_dir}/{title}_data_{frag.id}.pdf", bbox_inches='tight')
         plt.close()
 
-    def plot_fit(self, frag, diff, fit, r_squared):
+    def plot_fit(self, frag: Fragment, diff: np.ndarray, fit: np.ndarray,
+                 r_squared: float) -> None:
         angles_deg = np.degrees(frag.qm_angles)
         width, height = plt.figaspect(0.6)
         f = plt.figure(figsize=(width, height), dpi=300)
@@ -404,7 +421,7 @@ def make_contin(start, end):
     return end
 
 
-def make_scan_dir(scan_name):
+def make_scan_dir(scan_name: str) -> None:
     if os.path.exists(scan_name):
         shutil.rmtree(scan_name)
     os.makedirs(scan_name)
@@ -452,7 +469,7 @@ def read_gromacs_energies(directory):
     return md_energy
 
 
-def calc_r_squared(rb, energy_diff):
+def calc_r_squared(rb: np.ndarray, energy_diff: np.ndarray) -> float:
     residuals = rb - energy_diff
     ss_res = np.sum(residuals**2)
     ss_tot = np.sum((energy_diff-np.mean(energy_diff))**2)
@@ -466,7 +483,8 @@ def calc_multi_rb_obj(params, matrix, weights, energy_diffs):
     return (weighted_residuals**2).sum() + (params**2).sum()*1e-2
 
 
-def calc_multi_rb_matrix(fragments, all_dih_terms, n_total_scans):
+def calc_multi_rb_matrix(fragments: list[Fragment], all_dih_terms: list[DihedralBaseTerm],
+                         n_total_scans: int) -> np.ndarray:
     scan_sum = 0
     n_dihs = len(all_dih_terms)
     n_terms = n_dihs*6
@@ -482,7 +500,7 @@ def calc_multi_rb_matrix(fragments, all_dih_terms, n_total_scans):
     return matrix
 
 
-def calc_rb(angles):
+def calc_rb(angles: list[float]) -> np.ndarray:
     rb = np.zeros((len(angles), 6))
     rb[:, 0] = 1
     cos_phi = np.cos(np.array(angles)-np.pi)
@@ -493,7 +511,7 @@ def calc_rb(angles):
     return rb
 
 
-def calc_rb_pot(params, angles):
+def calc_rb_pot(params: np.ndarray, angles: list[float]) -> np.ndarray:
     rb = np.full(len(angles), params[0])
     for i in range(1, 6):
         rb += params[i]*np.cos(np.array(angles)-np.pi)**i

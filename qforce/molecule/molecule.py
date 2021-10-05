@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+from ..qm.qm_base import HessianOutput
+
 from .topology import Topology
 from .terms import Terms
 from .non_bonded import NonBonded
@@ -5,7 +8,8 @@ from .non_bonded import NonBonded
 
 class Molecule(object):
 
-    def __init__(self, config, job, qm_out, ext_q=None, ext_lj=None):
+    def __init__(self, config: SimpleNamespace, job: SimpleNamespace, qm_out: HessianOutput,
+                 ext_q=None, ext_lj=None):
         self.name = job.name
         self.elements = qm_out.elements
         self.charge = qm_out.charge

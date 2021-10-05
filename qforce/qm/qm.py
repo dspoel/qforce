@@ -1,3 +1,6 @@
+from typing import Union, TextIO
+from types import SimpleNamespace
+
 import os
 import sys
 from ase.io import read, write
@@ -40,18 +43,18 @@ vib_scaling = 1.0 :: float
 """
     _method = ['scan_step_size']
 
-    def __init__(self, job, config):
+    def __init__(self, job: SimpleNamespace, config: SimpleNamespace):
         self.job = job
         self.config = config
         self.software = self._set_qm_software(config.software)
         self.hessian_files = self._check_hessian_output()
         self.method = self._register_method()
 
-    def read_hessian(self):
+    def read_hessian(self) -> HessianOutput:
         qm_out = self.software.read().hessian(self.config, **self.hessian_files)
         return HessianOutput(self.config.vib_scaling, *qm_out)
 
-    def read_scan(self, files):
+    def read_scan(self, files: list[str]) -> ScanOutput:
         qm_outs = []
         n_scan_steps = int(np.ceil(360/self.config.scan_step_size))
 
@@ -66,8 +69,9 @@ vib_scaling = 1.0 :: float
         self.software.write().hessian(file, self.job.name, self.config, coords, atnums)
 
     @scriptify
-    def write_scan(self, file, scan_id, coords, atnums, scanned_atoms, start_angle, charge,
-                   multiplicity):
+    def write_scan(self, file: TextIO, scan_id: str, coords: np.ndarray, atnums: list[int],
+                   scanned_atoms: list[int], start_angle: float, charge: int,
+                   multiplicity: int) -> None:
         self.software.write().scan(file, scan_id, self.config, coords, atnums, scanned_atoms,
                                    start_angle, charge, multiplicity)
 
@@ -99,7 +103,7 @@ vib_scaling = 1.0 :: float
 
         return n_atoms, all_coords, all_angles, all_energies, chosen_point_charges
 
-    def _check_hessian_output(self):
+    def _check_hessian_output(self) -> dict[str, str]:
         hessian_files = {}
         all_files = os.listdir(self.job.dir)
 
@@ -128,7 +132,7 @@ vib_scaling = 1.0 :: float
                 hessian_files[req] = f'{self.job.dir}/{files[0]}'
         return hessian_files
 
-    def _read_coord_file(self):
+    def _read_coord_file(self) -> tuple[np.ndarray]:
         molecule = read(self.job.coord_file)
         coords = molecule.get_positions()
         atnums = molecule.get_atomic_numbers()
@@ -136,7 +140,7 @@ vib_scaling = 1.0 :: float
               comment=f'{self.job.name} - input geometry')
         return coords, atnums
 
-    def _set_qm_software(self, selection):
+    def _set_qm_software(self, selection: str) -> Union[Gaussian, QChem]:
         try:
             software = implemented_qm_software[selection]()
         except KeyError:
@@ -145,7 +149,7 @@ vib_scaling = 1.0 :: float
         return software
 
     @staticmethod
-    def _print_selected(selection, required_hessian_files):
+    def _print_selected(selection: str, required_hessian_files: dict[str, list[str]]) -> None:
         print(f'Selected QM Software: "{selection}"\n'
               'Necessary Hessian output files and the corresponding extensions are:')
         for req, ext in required_hessian_files.items():
@@ -153,10 +157,10 @@ vib_scaling = 1.0 :: float
         print()
 
     @classmethod
-    def get_questions(cls):
+    def get_questions(cls) -> str:
         return cls._questions
 
-    def _register_method(self):
+    def _register_method(self) -> dict[str, Union[float, str]]:
         method_list = self._method + self.software._method
         method = {key: val for key, val in self.config.__dict__.items() if key in method_list}
         method.update({key: val.upper() for key, val in method.items() if isinstance(val, str)})

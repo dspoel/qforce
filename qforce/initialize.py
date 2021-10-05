@@ -1,7 +1,12 @@
+from __future__ import annotations
+from typing import Union
+
 import os
 from types import SimpleNamespace
 import pkg_resources
 from colt import Colt
+from colt.answers import AnswersBlock
+from colt.questions import QuestionASTGenerator
 
 from .qm.qm import QM, implemented_qm_software
 from .molecule.terms import Terms
@@ -112,11 +117,11 @@ _ext_alpha = no :: bool
 
 """
 
-    def __init__(self, config, input_arg):
+    def __init__(self, config: AnswersBlock, input_arg: str):
         self.config = self._set_config(config)
         self.job = self._get_job_info(input_arg)
 
-    def _set_config(self, config):
+    def _set_config(self, config: AnswersBlock) -> SimpleNamespace:
         config['qm'].update(config['qm']['software'])
         config['qm'].update({'software': config['qm']['software'].value})
         config.update({key: SimpleNamespace(**val) for key, val in config.items()})
@@ -124,7 +129,7 @@ _ext_alpha = no :: bool
         return config
 
     @classmethod
-    def _extend_questions(cls, questions):
+    def _extend_questions(cls, questions: QuestionASTGenerator):
         questions.generate_block("qm", QM.get_questions())
         questions.generate_block("scan", DihedralScan.get_questions())
         questions.generate_cases("software", {key: software.questions for key, software in
@@ -132,10 +137,10 @@ _ext_alpha = no :: bool
         questions.generate_block("terms", Terms.get_questions())
 
     @classmethod
-    def from_config(cls, config, input_arg):
+    def from_config(cls, config: AnswersBlock, input_arg: str) -> Initialize:
         return cls(config, input_arg)
 
-    def _get_job_info(self, input_arg):
+    def _get_job_info(self, input_arg: str) -> SimpleNamespace:
         job = {}
         input_arg = input_arg.rstrip('/')
         base = os.path.basename(input_arg)
@@ -157,7 +162,7 @@ _ext_alpha = no :: bool
         return SimpleNamespace(**job)
 
     @staticmethod
-    def set_basis(value):
+    def set_basis(value: str) -> str:
         if value.endswith('**'):
             basis = f'{value[:-2]}(D,P)'
         elif value.endswith('*'):
@@ -167,7 +172,7 @@ _ext_alpha = no :: bool
         return basis.upper()
 
     @staticmethod
-    def set_dispersion(value):
+    def set_dispersion(value: str) -> Union[bool, str]:
         if value.lower() in ["no", "false", "n", "f"]:
             disp = False
         else:
@@ -175,7 +180,7 @@ _ext_alpha = no :: bool
         return disp
 
 
-def initialize(input_arg, config, presets=None):
+def initialize(input_arg: str, config: str, presets=None) -> tuple[SimpleNamespace]:
     print(LOGO)
     init = Initialize.from_questions(input_arg=input_arg, config=config, presets=presets,
                                      check_only=True)

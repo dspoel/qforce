@@ -1,3 +1,9 @@
+from __future__ import annotations
+from types import SimpleNamespace
+from typing import Union
+from .topology import Topology
+from .non_bonded import NonBonded
+
 from contextlib import contextmanager
 from copy import deepcopy
 #
@@ -31,7 +37,8 @@ class Terms(MappingIterator):
     _always_on = []
     _default_off = ['morse', 'morse_mp', 'morse_mp2', 'poly_angle', '_cross_bond_angle', '_cross_bond_bond']
 
-    def __init__(self, terms, ignore, not_fit_terms):
+    def __init__(self, terms: dict[str, Union[TermStorage, MultipleTermStorge]],
+                 ignore: list[str], not_fit_terms: list[str]):
         MappingIterator.__init__(self, terms, ignore)
         self.n_fitted_terms = self._set_fit_term_idx(not_fit_terms)
         print(f'n_fitted_terms = {self.n_fitted_terms}')
@@ -40,7 +47,7 @@ class Terms(MappingIterator):
         self.term_names = [name for name in self._term_factories.keys() if name not in ignore]
         self._term_paths = self._get_term_paths(terms)
 
-    def _calculate_n_fitted_params(self):
+    def _calculate_n_fitted_params(self) -> int:
         with self.add_ignore(['dihedral/flexible']):
             print('Running _calculate_n_fitted_params')
             counter = 0
@@ -54,7 +61,8 @@ class Terms(MappingIterator):
             return counter
 
     @classmethod
-    def from_topology(cls, config, topo, non_bonded, not_fit=['dihedral/flexible', 'non_bonded']):
+    def from_topology(cls, config: SimpleNamespace, topo: Topology, non_bonded: NonBonded,
+                      not_fit: list[str]=['dihedral/flexible', 'non_bonded']) -> Terms:
         print('Running from_topology')
         print('Passed config:')
         print(config.terms.__dict__.items())
@@ -127,7 +135,7 @@ class Terms(MappingIterator):
         terms = self._get_terms(termtyp)
         terms.remove_term(name, atomids)
 
-    def _set_fit_term_idx(self, not_fit_terms):
+    def _set_fit_term_idx(self, not_fit_terms: list[str]) -> int:
 
         with self.add_ignore(not_fit_terms):
             names = list(set(str(term) for term in self))
@@ -142,7 +150,7 @@ class Terms(MappingIterator):
 
         return n_fitted_terms
 
-    def _get_term_paths(self, terms):
+    def _get_term_paths(self, terms: dict[str, Union[TermStorage, MultipleTermStorge]]) -> dict[str, list[str]]:
         paths = {}
         for name, term in terms.items():
             result = [name]

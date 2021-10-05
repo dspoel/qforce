@@ -1,3 +1,9 @@
+from types import SimpleNamespace
+from typing import TextIO
+from .molecule.molecule import Molecule
+from .molecule.terms import Terms
+from .molecule.non_bonded import NonBonded
+
 import numpy as np
 #
 from .elements import ATOM_SYM, ATOMMASS
@@ -7,7 +13,8 @@ from .misc import LOGO_SEMICOL
 
 
 class ForceField():
-    def __init__(self, job_name, config, mol, neighbors, exclude_all=[]):
+    def __init__(self, job_name: str, config: SimpleNamespace, mol: Molecule,
+                 neighbors: list[list[list[int]]], exclude_all: list=[]):
         self.polar = config.ff._polar
         self.mol_name = job_name
         self.n_atoms = mol.n_atoms
@@ -29,12 +36,12 @@ class ForceField():
         else:
             self.polar_title = ''
 
-    def write_gromacs(self, directory, mol, coords):
+    def write_gromacs(self, directory: str, mol: Molecule, coords: np.ndarray) -> None:
         self.write_itp(mol, directory)
         self.write_top(directory)
         self.write_gro(directory, coords, mol.non_bonded.alpha_map)
 
-    def write_top(self, directory):
+    def write_top(self, directory: str) -> None:
         with open(f"{directory}/gas{self.polar_title}.top", "w") as top:
             # defaults
             top.write("\n[ defaults ]\n")
@@ -54,7 +61,9 @@ class ForceField():
             top.write(f"; {' '*(size-10)}compound    n_mol\n")
             top.write(f"{' '*(10-size)}{self.mol_name}        1\n")
 
-    def write_gro(self, directory, coords, alpha_map, box=[20., 20., 20.]):
+    def write_gro(self, directory: str, coords: np.ndarray, alpha_map,
+                  box: list[float]=[20., 20., 20.]) -> None:
+        print(f'alpha_map: {type(alpha_map)}, {alpha_map}')
         n_atoms = self.n_atoms
         if self.polar:
             n_atoms += len(alpha_map.keys())
@@ -73,7 +82,7 @@ class ForceField():
                     gro.write(f"{coords_nm[atom][2]:>8.3f}\n")
             gro.write(f'{box[0]:>12.5f}{box[1]:>12.5f}{box[2]:>12.5f}\n')
 
-    def write_itp(self, mol, directory):
+    def write_itp(self, mol: Molecule, directory: str):
         with open(f"{directory}/{self.mol_name}_qforce{self.polar_title}.itp", "w") as itp:
             itp.write(LOGO_SEMICOL)
             self.write_itp_atoms_and_molecule(itp, mol.non_bonded)
@@ -117,7 +126,7 @@ class ForceField():
 
         return a_types, nb_pairs, nb_1_4
 
-    def write_itp_atoms_and_molecule(self, itp, non_bonded):
+    def write_itp_atoms_and_molecule(self, itp: TextIO, non_bonded: NonBonded) -> None:
         gro_atomtypes, gro_nonbonded, gro_1_4 = self.convert_to_gromacs_nonbonded(non_bonded)
 
         # atom types
@@ -175,7 +184,7 @@ class ForceField():
                 itp.write(f'{drude+1:>5}{"DP":>9}{2:>6}{"DRU":>6}{f"D{i}":>7}{atom+1:>5}')
                 itp.write(f'{-8.:>11.5f}{0.:>10.5f}\n')
 
-    def write_itp_polarization(self, itp, non_bonded):
+    def write_itp_polarization(self, itp: TextIO, non_bonded: NonBonded) -> None:
         # polarization
         itp.write("\n[ polarization ]\n")
         itp.write(";    i     j     f         alpha\n")
@@ -191,14 +200,14 @@ class ForceField():
         # for tho in self.thole:
         #     itp.write("{:>6}{:>6}{:>6}{:>6}{:>4}{:>7.2f}{:>14.8f}{:>14.8f}\n".format(*tho))
 
-    def write_itp_pairs(self, itp):
+    def write_itp_pairs(self, itp: TextIO) -> None:
         if self.pairs != []:
             itp.write("\n[ pairs ]\n")
             itp.write(";   ai    aj  func \n")
         for pair in self.pairs:
             itp.write(f"{pair[0]+1:>6}{pair[1]+1:>6}{1:>6}\n")
 
-    def write_itp_bonds(self, itp, terms, alpha_map):
+    def write_itp_bonds(self, itp: TextIO, terms: Terms, alpha_map) -> None:
         itp.write("\n[ bonds ]\n")
         itp.write(";   ai    aj     f        r0        kb\n")
         for bond in terms['bond']:
@@ -218,7 +227,7 @@ class ForceField():
                 if a1 in alpha_map.keys():
                     itp.write(f'{a2+1:>6}{alpha_map[a1]+1:>6}{5:>6}\n')
 
-    def write_itp_angles(self, itp, terms):
+    def write_itp_angles(self, itp: TextIO, terms: Terms) -> None:
         itp.write("\n[ angles ]\n")
         itp.write(";   ai    aj    ak     f        th0          kth\n")
         for angle in terms['angle']:
@@ -237,7 +246,7 @@ class ForceField():
                 itp.write(f'{ids[0]:>6}{ids[1]:>6}{ids[2]:>6}{5:>6}{equ:>11.3f}{fconst:>13.3f}'
                           f'{urey_equ:>10.5f}{urey_fconst:>13.3f}\n')
 
-    def write_itp_dihedrals(self, itp, terms):
+    def write_itp_dihedrals(self, itp: TextIO, terms: Terms) -> None:
         if len(terms['dihedral']) > 0:
             itp.write("\n[ dihedrals ]\n")
 
@@ -293,7 +302,7 @@ class ForceField():
             itp.write(f'{ids[0]:>6}{ids[1]:>6}{ids[2]:>6}{ids[3]:>6}{3:>6}'
                       f'{c0:>11.3f}{c1:>11.3f}{c2:>11.3f}{0:>11.1f}{0:>11.1f}{0:>11.1f}\n')
 
-    def write_itp_exclusions(self, itp):
+    def write_itp_exclusions(self, itp: TextIO) -> None:
         if any(len(exclusion) > 0 for exclusion in self.exclusions):
             itp.write("\n[ exclusions ]\n")
         for i, exclusion in enumerate(self.exclusions):
@@ -303,7 +312,8 @@ class ForceField():
                 itp.write(("{} "*len(exclusion)).format(*exclusion))
                 itp.write("\n")
 
-    def make_pairs(self, neighbors, non_bonded):
+    def make_pairs(self, neighbors: list[list[list[int]]],
+                   non_bonded: NonBonded) -> list[list[int]]:
         pairs, polar_pairs = [], []
 
         for pair in non_bonded.pairs:
@@ -327,7 +337,8 @@ class ForceField():
 
         return pairs+polar_pairs
 
-    def make_exclusions(self, non_bonded, neighbors, exclude_all):
+    def make_exclusions(self, non_bonded: NonBonded, neighbors: list[list[list[int]]],
+                        exclude_all: list) -> list[list]:
         exclusions = [[] for _ in range(self.n_atoms)]
 
         # input exclusions
@@ -369,7 +380,7 @@ class ForceField():
 
         return exclusions
 
-    def get_atom_names(self):
+    def get_atom_names(self) -> list[str]:
         atom_names = []
         atom_dict = {}
 
@@ -391,7 +402,7 @@ class ForceField():
                 phi = np.degrees(restraint[1])
                 itp.write(f'{a1:>5}{a2:>5}{a3:>5}{a4:>5}{1:>5} {phi:>10.4f}  0.0  {fc}\n')
 
-    def set_charge(self, non_bonded):
+    def set_charge(self, non_bonded: NonBonded) -> np.ndarray:
         q = np.copy(non_bonded.q)
         if self.polar:
             q[list(non_bonded.alpha_map.keys())] += 8

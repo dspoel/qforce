@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+from .qm.qm_base import HessianOutput
+
 import numpy as np
 from scipy.linalg import eigh
 import seaborn as sns
@@ -8,14 +11,16 @@ import matplotlib.pyplot as plt
 from .elements import ATOMMASS, ATOM_SYM
 
 
-def calc_qm_vs_md_frequencies(job, qm, md_hessian):
+def calc_qm_vs_md_frequencies(job: SimpleNamespace, qm: HessianOutput,
+                              md_hessian: np.ndarray) -> None:
     qm_freq, qm_vec = calc_vibrational_frequencies(qm.hessian, qm)
     md_freq, md_vec = calc_vibrational_frequencies(md_hessian, qm)
     mean_percent_error = write_vibrational_frequencies(qm_freq, qm_vec, md_freq, md_vec, qm, job)
     plot_frequencies(job, qm_freq, md_freq, mean_percent_error)
 
 
-def plot_frequencies(job, qm_freq, md_freq, mean_percent_error):
+def plot_frequencies(job: SimpleNamespace, qm_freq: np.ndarray, md_freq: np.ndarray,
+                     mean_percent_error: float) -> None:
     n_freqs = np.arange(len(qm_freq))+1
     width, height = plt.figaspect(0.6)
     f = plt.figure(figsize=(width, height), dpi=300)
@@ -31,7 +36,8 @@ def plot_frequencies(job, qm_freq, md_freq, mean_percent_error):
     plt.close()
 
 
-def calc_vibrational_frequencies(upper, qm):
+def calc_vibrational_frequencies(upper: np.ndarray,
+                                 qm: HessianOutput) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate the MD vibrational frequencies by diagonalizing its Hessian
     """
@@ -63,7 +69,9 @@ def calc_vibrational_frequencies(upper, qm):
     return freq, vec
 
 
-def write_vibrational_frequencies(qm_freq, qm_vec, md_freq, md_vec, qm, job):
+def write_vibrational_frequencies(qm_freq: np.ndarray, qm_vec: np.ndarray, md_freq: np.ndarray,
+                                  md_vec: np.ndarray, qm: HessianOutput,
+                                  job: SimpleNamespace) -> float:
     """
     Scope:
     ------

@@ -1,4 +1,5 @@
 import sys
+from types import SimpleNamespace
 
 from .polarize import polarize
 from .initialize import initialize
@@ -10,13 +11,16 @@ from .fragment import fragment
 from .dihedral_scan import DihedralScan
 from .frequencies import calc_qm_vs_md_frequencies
 from .hessian import fit_hessian, fit_hessian_nl
-from .misc import check_continue
+from .misc import check_continue, print_phase_header, check_wellposedness, PHASES
 
 
-def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psave=None,
-               process_file=None, presets=None):
+def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None, psave: str=None,
+               process_file: str=None, presets=None) -> None:
+    # Phase count
+    pc = 0
+
     #### Initialization phase ####
-    print('\n#### INITIALIZATION PHASE ####\n')
+    print_phase_header(PHASES[pc])
     config, job = initialize(input_arg, config, presets)
     print('Config:')
     print(config, '\n')
@@ -34,63 +38,71 @@ def run_qforce(input_arg, ext_q=None, ext_lj=None, config=None, pinput=None, psa
 
     check_wellposedness(config)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Polarization phase ####
-    print('\n#### POLARIZATION PHASE ####\n')
+    print_phase_header(PHASES[pc])
     if config.ff._polarize:
         polarize(job, config.ff)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### QM phase ####
-    print('\n#### QM PHASE ####\n')
+    print_phase_header(PHASES[pc])
     qm = QM(job, config.qm)
     qm_hessian_out = qm.read_hessian()
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Molecule phase ####
-    print('\n#### MOLECULE PHASE ####\n')
+    print_phase_header(PHASES[pc])
     mol = Molecule(config, job, qm_hessian_out, ext_q, ext_lj)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Hessian fitting phase ####
-    print('\n#### HESSIAN FITTING PHASE ####\n')
+    print_phase_header(PHASES[pc])
     md_hessian = None
     if config.opt.fit_type == 'linear':
         md_hessian = fit_hessian(config, mol, qm_hessian_out, psave)
     elif config.opt.fit_type == 'non_linear':
         md_hessian = fit_hessian_nl(config, mol, qm_hessian_out, pinput, psave, process_file)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Flexible dihedral scan phase ####
     if config.ff.scan_dihedrals:
-        print('\n#### FLEXIBLE DIHEDRAL SCAN PHASE ####\n')
+        print_phase_header(PHASES[pc])
         if len(mol.terms['dihedral/flexible']) > 0 and config.scan.do_scan:
             fragments = fragment(mol, qm, job, config)
             DihedralScan(fragments, mol, job, config)
 
-        check_continue(config)
+        check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Calculate frequencies phase ####
-    print('\n#### CALCULATE FREQUENCIES PHASE ####\n')
+    print_phase_header(PHASES[pc])
     calc_qm_vs_md_frequencies(job, qm_hessian_out, md_hessian)
 
-    check_continue(config)
+    check_continue(config, PHASES[pc], PHASES[pc+1])
+    pc += 1
 
     #### Calculate Force Field phase ####
     if config.ff.compute_ff:
-        print('\n#### CALCULATE FORCE FIELD PHASE ####\n')
+        print_phase_header(PHASES[pc])
         ff = ForceField(job.name, config, mol, mol.topo.neighbors)
         ff.write_gromacs(job.dir, mol, qm_hessian_out.coords)
 
         print_outcome(job.dir)
     else:
         print('\nNo Force Field output requested...\n')
-        print('RUN COMPLETED')
+
+    print('\n\nRUN COMPLETED')
 
 
 def run_hessian_fitting_for_external(job_dir, qm_data, ext_q=None, ext_lj=None,
@@ -112,25 +124,10 @@ def run_hessian_fitting_for_external(job_dir, qm_data, ext_q=None, ext_lj=None,
     return mol.terms
 
 
-def print_outcome(job_dir):
+def print_outcome(job_dir: str) -> None:
     print(f'Output files can be found in the directory: {job_dir}.')
     print('- Q-Force force field parameters in GROMACS format (gas.gro, gas.itp, gas.top).')
     print('- QM vs MM vibrational frequencies, pre-dihedral fitting (frequencies.txt,'
           ' frequencies.pdf).')
     print('- Vibrational modes which can be visualized in VMD (frequencies.nmd).')
     print('- QM vs MM dihedral profiles (if any) in "fragments" folder as ".pdf" files.')
-
-
-def check_wellposedness(config):
-    if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
-        raise Exception('Linear optimization is not valid for Morse bond potential')
-    elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
-        raise Exception('Morse and Morse MP bonds cannot be used at the same time')
-    elif config.terms.angle and config.terms.poly_angle:
-        raise Exception('Harmonic angle cannot be used at the same time than Poly Angle terms')
-    elif config.terms.morse_mp and config.terms.morse_mp2:
-        raise Exception('Cannot run two versions of Morse MP at the same time')
-    elif config.opt.noise < 0 or config.opt.noise > 1:
-        raise Exception('Noise must be in range [0, 1]')
-    else:
-        print('Configuration is valid!')
