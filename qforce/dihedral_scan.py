@@ -160,7 +160,8 @@ frag_lib = ~/qforce_fragments :: folder
             print('         Please check manually to see if you find the accuracy satisfactory.\n')
 
     def scan_dihedrals(self, fragments: list[Fragment], mol: Molecule, all_config: SimpleNamespace,
-                       all_dih_terms: list[DihedralBaseTerm], weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+                       all_dih_terms: list[DihedralBaseTerm],
+                       weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         for n_run in range(self.config.n_dihed_scans):
             energy_diffs, md_energies = [], []
             for n_fit, frag in enumerate(fragments, start=1):
@@ -332,7 +333,8 @@ frag_lib = ~/qforce_fragments :: folder
         sym_profile -= sym_profile.min()
         return sym_angle, sym_profile
 
-    def plot_results(self, frag, md_energies, title, r_squared=None):
+    def plot_results(self, frag: Fragment, md_energies: np.ndarray, title: str,
+                     r_squared: float=None) -> None:
         angles_deg = np.degrees(frag.qm_angles)
         width, height = plt.figaspect(0.6)
         f = plt.figure(figsize=(width, height), dpi=300)
@@ -349,7 +351,8 @@ frag_lib = ~/qforce_fragments :: folder
         f.savefig(f"{self.frag_dir}/{title}_data_{frag.id}.pdf", bbox_inches='tight')
         plt.close()
 
-    def plot_fit(self, frag, diff, fit, r_squared):
+    def plot_fit(self, frag: Fragment, diff: np.ndarray, fit: np.ndarray,
+                 r_squared: float) -> None:
         angles_deg = np.degrees(frag.qm_angles)
         width, height = plt.figaspect(0.6)
         f = plt.figure(figsize=(width, height), dpi=300)
@@ -466,7 +469,7 @@ def read_gromacs_energies(directory):
     return md_energy
 
 
-def calc_r_squared(rb, energy_diff):
+def calc_r_squared(rb: np.ndarray, energy_diff: np.ndarray) -> float:
     residuals = rb - energy_diff
     ss_res = np.sum(residuals**2)
     ss_tot = np.sum((energy_diff-np.mean(energy_diff))**2)
@@ -497,7 +500,7 @@ def calc_multi_rb_matrix(fragments: list[Fragment], all_dih_terms: list[Dihedral
     return matrix
 
 
-def calc_rb(angles):
+def calc_rb(angles: list[float]) -> np.ndarray:
     rb = np.zeros((len(angles), 6))
     rb[:, 0] = 1
     cos_phi = np.cos(np.array(angles)-np.pi)
