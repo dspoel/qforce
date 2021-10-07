@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from types import SimpleNamespace
 from typing import Union
 
@@ -66,3 +67,21 @@ def check_continue(config: SimpleNamespace, prev: str, next: str) -> None:
         if x not in ['yes', 'y', '']:
             print()
             sys.exit(0)
+
+def term_name_key(name_tuple: tuple[str, list[float]]) -> tuple[str, str]:
+    """Return key for sorting terms when exporting to JSON after hessian fitting
+
+    Keyword arguments:
+        name_tuple (tuple[str, list[float]]) -- a tuple containing the name of the term given by
+        the __str__ method first and the list of parameters second
+
+    Returns:
+        tuple[str, str, int] containing the raw term type first, involved atoms second
+        (the info in parenthesis given by __str__) and the term order third
+    """
+    t_type, atoms = name_tuple[0].split('(', 1)
+    atoms = atoms[:-1]  # Delete the last closing parenthesis
+    t_type_words = t_type.rstrip('0123456789')  # In case of polyterm, delete the numbers in the end
+    match = re.match(r"([a-zA-Z]+)([0-9]+)", t_type, re.I)
+    t_type_numbers = int(match.groups()[-1]) if match else ''
+    return t_type_words, atoms, t_type_numbers

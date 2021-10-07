@@ -6,7 +6,7 @@ import scipy.optimize as optimize
 import numpy as np
 import noisyopt as nopt
 
-from .misc import check_continue
+from .misc import check_continue, term_name_key
 from .molecule.molecule import Molecule
 from .qm.qm_base import HessianOutput
 from .molecule.terms import Terms
@@ -68,6 +68,8 @@ def write_opt_params(psave: str, sorted_terms: list[TermABC], mol: Molecule) -> 
         for term in sorted_terms:
             if term.idx < mol.terms.n_fitted_terms:
                 dct[str(term)] = term.fconst.tolist()
+        # Sort dictionary before dumping
+        dct = dict(sorted(dct.items(), key=term_name_key, reverse=False))
         json.dump(dct, f, indent=4)
 
 
