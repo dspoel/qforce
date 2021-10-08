@@ -8,7 +8,12 @@ from qforce.misc import check_if_file_exists
 from qforce.molecule.energies import bd_energy
 
 
-def parse_command_line() -> tuple:
+def parse_command_line() -> tuple[str, str, str, str]:
+    """Parse the command line input.
+
+    Returns:
+        The param files for harmonic bonds, Morse bonds, Morse MP2 bonds, and the output file path
+    """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)
     parser.add_argument('-ha', type=check_if_file_exists, metavar='harmonic', required=True,
@@ -21,10 +26,10 @@ def parse_command_line() -> tuple:
                         help='Name for output file.')
     args = parser.parse_args()
 
-    print(f'\nargs.ha = {args.ha}, type = {type(args.ha)}')
-    print(f'args.m = {args.m}, type = {type(args.m)}')
-    print(f'args.mmp2 = {args.mmp2}, type = {type(args.mmp2)}')
-    print(f'args.o = {args.o}, type = {type(args.o)}\n')
+    # print(f'\nargs.ha = {args.ha}, type = {type(args.ha)}')
+    # print(f'args.m = {args.m}, type = {type(args.m)}')
+    # print(f'args.mmp2 = {args.mmp2}, type = {type(args.mmp2)}')
+    # print(f'args.o = {args.o}, type = {type(args.o)}\n')
 
     return args.ha, args.m, args.mmp2, args.o
 

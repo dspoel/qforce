@@ -5,7 +5,13 @@ from qforce.main import run_qforce
 from qforce.misc import check_if_file_exists
 
 
-def parse_command_line() -> tuple[str]:
+def parse_command_line() -> tuple[str, str, str, str, str]:
+    """Parse the command line input.
+
+    Returns:
+        The input file or directory, the options file, the input params, the output params,
+        and the process file
+    """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)
     parser.add_argument('f', type=check_if_file_exists, metavar='file',

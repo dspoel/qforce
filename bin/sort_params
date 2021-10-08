@@ -7,13 +7,18 @@ from qforce.misc import check_if_file_exists, term_name_key
 
 
 def parse_command_line() -> str:
+    """Parse the command line input.
+
+    Returns:
+        The param file
+    """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)
     parser.add_argument('-i', type=check_if_file_exists, metavar='input', required=True,
                         help='Input params file.')
     args = parser.parse_args()
 
-    print(f'\nargs.i = {args.i}, type = {type(args.i)}\n')
+    # print(f'\nargs.i = {args.i}, type = {type(args.i)}\n')
 
     return args.i
 
@@ -34,5 +39,3 @@ if __name__ == '__main__':
 
     with open(output_path, 'w') as out_file:
         json.dump(dct, out_file, indent=4)
-
-    print("\n")

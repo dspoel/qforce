@@ -4,6 +4,7 @@ import re
 from types import SimpleNamespace
 from typing import Union
 
+
 LOGO = """
           ____         ______
          / __ \       |  ____|
@@ -16,6 +17,7 @@ LOGO = """
             University of Groningen - 2020
             ==============================
 """
+
 
 LOGO_SEMICOL = """
 ;          ____         ______
@@ -30,19 +32,48 @@ LOGO_SEMICOL = """
 ;            ==============================
 """
 
+
 PHASES = ['Initialization', 'Polarization', 'QM', 'Molecule', 'Hessian Fitting',
           'Flexible Dihedral Scan', 'Calculate Frequencies', 'Calculate Force Field']
 
 
 def check_if_file_exists(file: str) -> Union[str, None]:
+    """Check if a file exists.
+    If the file does not exist, the execution will halt.
+
+    Keyword arguments:
+        file (str) -- the file path
+
+    Returns:
+        the file path if the file exists, otherwise nothing
+    """
     if not os.path.exists(file) and not os.path.exists(f'{file}_qforce'):
         sys.exit(f'ERROR: "{file}" does not exist.\n')
     return file
 
+
 def print_phase_header(phase: str) -> None:
+    """Print a header for an execution phase.
+
+    Keyword arguments:
+        phase (str) -- the phase name
+
+    Returns:
+        Nothing
+    """
     print(f'\n#### {phase.upper()} PHASE ####\n')
 
+
 def check_wellposedness(config: SimpleNamespace) -> None:
+    """Check the global config for inconsistencies.
+    If an inconsistency is detected, the excecution is halted.
+
+    Keyword arguments:
+        config (SimpleNamespace) -- the global config settings
+
+    Returns:
+        Nothing
+    """
     if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
         raise Exception('Linear optimization is not valid for Morse bond potential')
     elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
@@ -59,7 +90,20 @@ def check_wellposedness(config: SimpleNamespace) -> None:
     else:
         print('Configuration is valid!')
 
-def check_continue(config: SimpleNamespace, prev: str, next: str) -> None:
+
+def check_continue(config: SimpleNamespace, prev: str=None, next: str=None) -> None:
+    """Check if the user wants to continue with the run.
+    The user will be asked to provide input. If y, yes, or the return key is
+    pressed directly, the program will continue; otherwise, it will immediately stop.
+
+    Keyword arguments:
+        config (SimpleNamespace) -- the global config settings
+        prev (str) -- the previous phase in the run (default None)
+        next (str) -- the upcoming phase in the run (default None)
+
+    Returns:
+        Nothing
+    """
     if config.general.debug_mode:
         if prev and next:
             print(f'\n{prev.upper()} phase completed. Next up: {next.upper()} phase.')
@@ -67,6 +111,7 @@ def check_continue(config: SimpleNamespace, prev: str, next: str) -> None:
         if x not in ['yes', 'y', '']:
             print()
             sys.exit(0)
+
 
 def term_name_key(name_tuple: tuple[str, list[float]]) -> tuple[str, str]:
     """Return key for sorting terms when exporting to JSON after hessian fitting

@@ -8,7 +8,12 @@ from qforce.misc import check_if_file_exists
 from qforce.molecule.energies import bd_energy
 
 
-def parse_command_line() -> tuple[str]:
+def parse_command_line() -> tuple[str, str]:
+    """Parse the command line input.
+
+    Returns:
+        The param files for Morse (input) and Morse MP (output) bonds
+    """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)
     parser.add_argument('-i', type=check_if_file_exists, metavar='input', required=True,
@@ -17,8 +22,8 @@ def parse_command_line() -> tuple[str]:
                         help='Output params file.')
     args = parser.parse_args()
 
-    print(f'\nargs.i = {args.i}, type = {type(args.i)}')
-    print(f'args.o = {args.o}, type = {type(args.o)}\n')
+    # print(f'\nargs.i = {args.i}, type = {type(args.i)}')
+    # print(f'args.o = {args.o}, type = {type(args.o)}\n')
 
     return args.i, args.o
 
