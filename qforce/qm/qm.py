@@ -44,6 +44,19 @@ vib_scaling = 1.0 :: float
     _method = ['scan_step_size']
 
     def __init__(self, job: SimpleNamespace, config: SimpleNamespace):
+        """Create a new QM object.
+
+        Keyword arguments
+        -----------------
+            job : SimpleNamespace
+                structure with job information
+            config: SimpleNamespace:
+                structure with qm config settings (part of the global config structure)
+
+        Returns
+        -------
+            A new QM instance
+        """
         self.job = job
         self.config = config
         self.software = self._set_qm_software(config.software)
@@ -51,10 +64,26 @@ vib_scaling = 1.0 :: float
         self.method = self._register_method()
 
     def read_hessian(self) -> HessianOutput:
+        """Read QM hessian output.
+
+        Returns:
+            A HessianOutput instance with information provided in the QM hessian output files
+        """
         qm_out = self.software.read().hessian(self.config, **self.hessian_files)
         return HessianOutput(self.config.vib_scaling, *qm_out)
 
     def read_scan(self, files: list[str]) -> ScanOutput:
+        """Read flexible dihedral scan output.
+
+        Keyword arguments
+        -----------------
+            files : list[str]
+                list of files for the output of flexible dihedral scans
+
+        Returns
+        -------
+            A ScanOutput instance with information from scans
+        """
         qm_outs = []
         n_scan_steps = int(np.ceil(360/self.config.scan_step_size))
 
@@ -132,7 +161,7 @@ vib_scaling = 1.0 :: float
                 hessian_files[req] = f'{self.job.dir}/{files[0]}'
         return hessian_files
 
-    def _read_coord_file(self) -> tuple[np.ndarray]:
+    def _read_coord_file(self) -> tuple[np.ndarray, np.ndarray]:
         molecule = read(self.job.coord_file)
         coords = molecule.get_positions()
         atnums = molecule.get_atomic_numbers()

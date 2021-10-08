@@ -182,6 +182,21 @@ _ext_alpha = no :: bool
 
 def initialize(input_arg: str, config: str,
                presets=None) -> tuple[SimpleNamespace, SimpleNamespace]:
+    """Initialize the user and Q-Force settings into corresponding data structures.
+
+    Keyword arguments
+    -----------------
+        input_arg : str
+            The input coordinate file or directory
+        config : str
+            Path to the user config file
+        presets : (default None)
+
+    Returns
+    -------
+        The SimpleNamespace with config information, and the SimpleNamespace with job
+        information
+    """
     print(LOGO)
     init = Initialize.from_questions(input_arg=input_arg, config=config, presets=presets,
                                      check_only=True)
