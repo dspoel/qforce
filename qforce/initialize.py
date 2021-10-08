@@ -180,7 +180,8 @@ _ext_alpha = no :: bool
         return disp
 
 
-def initialize(input_arg: str, config: str, presets=None) -> tuple[SimpleNamespace]:
+def initialize(input_arg: str, config: str,
+               presets=None) -> tuple[SimpleNamespace, SimpleNamespace]:
     print(LOGO)
     init = Initialize.from_questions(input_arg=input_arg, config=config, presets=presets,
                                      check_only=True)

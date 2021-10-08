@@ -9,8 +9,9 @@ from qforce.misc import check_if_file_exists, term_name_key
 def parse_command_line() -> str:
     """Parse the command line input.
 
-    Returns:
-        The param file
+    Returns
+    -------
+        The param file (str)
     """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)

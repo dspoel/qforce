@@ -41,11 +41,14 @@ def check_if_file_exists(file: str) -> Union[str, None]:
     """Check if a file exists.
     If the file does not exist, the execution will halt.
 
-    Keyword arguments:
-        file (str) -- the file path
+    Keyword arguments
+    -----------------
+        file : str
+            the file path
 
-    Returns:
-        the file path if the file exists, otherwise nothing
+    Returns
+    -------
+        the file path (str) if the file exists, otherwise None
     """
     if not os.path.exists(file) and not os.path.exists(f'{file}_qforce'):
         sys.exit(f'ERROR: "{file}" does not exist.\n')
@@ -55,11 +58,14 @@ def check_if_file_exists(file: str) -> Union[str, None]:
 def print_phase_header(phase: str) -> None:
     """Print a header for an execution phase.
 
-    Keyword arguments:
-        phase (str) -- the phase name
+    Keyword arguments
+    -----------------
+        phase : str
+            the phase name
 
-    Returns:
-        Nothing
+    Returns
+    -------
+        None
     """
     print(f'\n#### {phase.upper()} PHASE ####\n')
 
@@ -68,11 +74,14 @@ def check_wellposedness(config: SimpleNamespace) -> None:
     """Check the global config for inconsistencies.
     If an inconsistency is detected, the excecution is halted.
 
-    Keyword arguments:
-        config (SimpleNamespace) -- the global config settings
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            the global config settings
 
-    Returns:
-        Nothing
+    Returns
+    -------
+        None
     """
     if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
         raise Exception('Linear optimization is not valid for Morse bond potential')
@@ -96,13 +105,18 @@ def check_continue(config: SimpleNamespace, prev: str=None, next: str=None) -> N
     The user will be asked to provide input. If y, yes, or the return key is
     pressed directly, the program will continue; otherwise, it will immediately stop.
 
-    Keyword arguments:
-        config (SimpleNamespace) -- the global config settings
-        prev (str) -- the previous phase in the run (default None)
-        next (str) -- the upcoming phase in the run (default None)
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            the global config settings
+        prev : str (default None)
+            the previous phase in the run
+        next : str (default None)
+            the upcoming phase in the run
 
-    Returns:
-        Nothing
+    Returns
+    -------
+        None
     """
     if config.general.debug_mode:
         if prev and next:
@@ -116,11 +130,14 @@ def check_continue(config: SimpleNamespace, prev: str=None, next: str=None) -> N
 def term_name_key(name_tuple: tuple[str, list[float]]) -> tuple[str, str]:
     """Return key for sorting terms when exporting to JSON after hessian fitting
 
-    Keyword arguments:
-        name_tuple (tuple[str, list[float]]) -- a tuple containing the name of the term given by
-        the __str__ method first and the list of parameters second
+    Keyword arguments
+    -----------------
+        name_tuple : tuple[str, list[float]]
+            a tuple containing the name of the term given by the __str__ method first
+            and the list of parameters second
 
-    Returns:
+    Returns
+    -------
         tuple[str, str, int] containing the raw term type first, involved atoms second
         (the info in parenthesis given by __str__) and the term order third
     """
@@ -130,3 +147,20 @@ def term_name_key(name_tuple: tuple[str, list[float]]) -> tuple[str, str]:
     match = re.match(r"([a-zA-Z]+)([0-9]+)", t_type, re.I)
     t_type_numbers = int(match.groups()[-1]) if match else ''
     return t_type_words, atoms, t_type_numbers
+
+
+def add_job_dir_to_json_name(job_dir: str, path: str) -> Union[str, None]:
+    """Add the job directory (<molecule_name>_qforce) to a given json file name.
+
+    Keyword arguments
+    -----------------
+        job_dir : str
+            the job directory
+        path : str
+            the name of the json file (without extension)
+
+    Returns
+    -------
+        The composite path (str) if "path" is not None, else None
+    """
+    return job.dir + '/' + path + '.json' if path is not None else None

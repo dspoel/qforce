@@ -11,8 +11,9 @@ from qforce.molecule.energies import bd_energy
 def parse_command_line() -> tuple[str, str]:
     """Parse the command line input.
 
-    Returns:
-        The param files for Morse (input) and Morse MP (output) bonds
+    Returns
+    -------
+        The param files (str) for Morse (input) and Morse MP (output) bonds
     """
     formatter = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=formatter)

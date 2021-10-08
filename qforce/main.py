@@ -11,11 +11,34 @@ from .fragment import fragment
 from .dihedral_scan import DihedralScan
 from .frequencies import calc_qm_vs_md_frequencies
 from .hessian import fit_hessian, fit_hessian_nl
-from .misc import check_continue, print_phase_header, check_wellposedness, PHASES
+from .misc import check_continue, print_phase_header, check_wellposedness,\
+    PHASES, add_job_dir_to_json_name
 
 
-def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None, psave: str=None,
-               process_file: str=None, presets=None) -> None:
+def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput: str=None,
+               psave: str=None, process_file: str=None, presets=None) -> None:
+    """Start a Q-Force run.
+
+    Keyword arguments
+    -----------------
+        input_arg : str
+            the input coordinate file, or directory
+        ext_q : (default None)
+        ext_lj : (default None)
+        config : str (default None)
+            the path to the config file
+        pinput : str (default None)
+            the name of the input params file within the <molecule_name>_qforce directory
+        psave : str (default None)
+            the name of the output params file within the <molecule_name>_qforce directory
+        process_file : str (default None)
+            the name of the output process file within the <molecule_name>_qforce directory
+        presets : (default None)
+
+    Returns
+    -------
+        None
+    """
     # Phase count
     pc = 0
 
@@ -26,15 +49,12 @@ def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput
     print(config, '\n')
     print('Job:')
     print(job, '\n')
-    if pinput is not None:
-        pinput = job.dir + '/' + pinput + '.json'
-        print(f'pinput path: {pinput}')
-    if psave is not None:
-        psave = job.dir + '/' + psave + '.json'
-        print(f'psave path: {psave}')
-    if process_file is not None:
-        process_file = job.dir + '/' + process_file + '.txt'
-        print(f'process_file path: {process_file}')
+    pinput = add_job_dir_to_json_name(job.dir, pinput)
+    print(f'pinput path: {pinput}')
+    pinput = add_job_dir_to_json_name(job.dir, psave)
+    print(f'psave path: {psave}')
+    pinput = add_job_dir_to_json_name(job.dir, process_file)
+    print(f'process_file path: {process_file}')
 
     check_wellposedness(config)
 
@@ -125,6 +145,17 @@ def run_hessian_fitting_for_external(job_dir, qm_data, ext_q=None, ext_lj=None,
 
 
 def print_outcome(job_dir: str) -> None:
+    """Print final coutcome of the run.
+
+    Keyword arguments
+    -----------------
+        job_dir : str
+            Working directory, <molecule_name>_qforce
+
+    Returns
+    -------
+        None
+    """
     print(f'Output files can be found in the directory: {job_dir}.')
     print('- Q-Force force field parameters in GROMACS format (gas.gro, gas.itp, gas.top).')
     print('- QM vs MM vibrational frequencies, pre-dihedral fitting (frequencies.txt,'
