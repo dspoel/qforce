@@ -10,13 +10,29 @@ from .storage import TermStorage, MultipleTermStorge
 
 
 class TermABC(ABC):
+    """Represents a ForceField term."""
 
     __slots__ = ('atomids', 'equ', 'idx', 'fconst', '_typename', '_name', 'n_params')
 
     name = 'NOT_NAMED'
 
-    def __init__(self, atomids, equ, typename, n_params, fconst=None):
-        """Initialization of a term"""
+    def __init__(self, atomids: list[int], equ: float, typename: str, n_params: int,
+                 fconst: np.ndarray=None):
+        """Initialization of a term.
+
+        Keyword arguments
+        -----------------
+            atomids : list[int]
+                List containing the atom IDs which participate in the term
+            equ : float
+                Equilibrium for the term
+            typename : str
+                Representation of the atoms involved in the term and their bonds
+            n_params : int
+                The number of customizable parameters/constants which the term involves
+            fconst : np.ndarray[float](n_params,) (default None)
+                Values for the term constants
+        """
         self.atomids = np.array(atomids)
         self.equ = equ
         self.idx = 0
@@ -32,23 +48,33 @@ class TermABC(ABC):
         return self._name
 
     def set_idx(self, idx: int) -> None:
+        """Set a new ID for the term.
+
+        Keyword arguments
+        -----------------
+            idx : int
+                The new ID
+
+        Returns
+        -------
+            None
+        """
         self.idx = idx
 
-    def do_force(self, crd, force):
-        """force calculation with given geometry"""
+    def do_force(self, crd: np.ndarray, force: np.ndarray) -> float:
+        """Force calculation with given geometry."""
         return self._calc_forces(crd, force, self.fconst)
 
     def do_fitting(self, crd: np.ndarray, forces: np.ndarray, index: int=0,
                    params: np.ndarray=None) -> None:
-        """compute fitting contributions"""
-        # self._calc_forces(crd, forces[self.idx], np.ones(self.n_params))
+        """Compute fitting contributions."""
         if params is None:  # Linear least squares
             self._calc_forces(crd, forces[self.idx], np.ones(self.n_params))
         else:  # Non-linear least squares
             self._calc_forces(crd, forces[self.idx], params[index:index+self.n_params])
 
     @abstractmethod
-    def _calc_forces(self, crd: np.ndarray, force: np.ndarray, fconst: np.ndarray):
+    def _calc_forces(self, crd: np.ndarray, force: np.ndarray, fconst: np.ndarray) -> float:
         """Perform actual force computation"""
 
     @classmethod
@@ -90,17 +116,20 @@ class TermFactory(ABC):
     @abstractmethod
     def get_terms(cls, topo: Topology, non_bonded: NonBonded,
                   config: SimpleNamespace) -> list:
-        """
-            Args:
-                topo: Topology object, const
-                    Stores all topology information
-                non_bonded: NonBonded object, const
-                    Stores all non bonded interaction information
-                config: global settings
-                    Stores the global config settings
+        """Get the terms of the current class based on molecule data.
 
-            Return:
-                list of cls objects
+        Keyword arguments
+        -----------------
+            topo : Topology
+                Stores all topology information
+            non_bonded : NonBonded object
+                Stores all non bonded interaction information
+            config : SimpleNamespace
+                Stores the global config settings
+
+        Returns
+        -------
+            list of cls objects
         """
         ...
 

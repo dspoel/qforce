@@ -52,10 +52,6 @@ vib_scaling = 1.0 :: float
                 structure with job information
             config: SimpleNamespace:
                 structure with qm config settings (part of the global config structure)
-
-        Returns
-        -------
-            A new QM instance
         """
         self.job = job
         self.config = config
@@ -162,6 +158,15 @@ vib_scaling = 1.0 :: float
         return hessian_files
 
     def _read_coord_file(self) -> tuple[np.ndarray, np.ndarray]:
+        """Read input coordinate file.
+
+        Returns
+        -------
+            A numpy array of shape (n_atoms, 3) with XYZ coordinates for every atom in the
+            molecule
+            A numpy array of shape (n_atoms,) with the atomic number for every atom in the
+            molecule
+        """
         molecule = read(self.job.coord_file)
         coords = molecule.get_positions()
         atnums = molecule.get_atomic_numbers()

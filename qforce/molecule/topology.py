@@ -9,12 +9,20 @@ from ..elements import ATOM_SYM, ELE_MAXB
 
 
 class Topology(object):
-
-    """"
-    Contains all bonding etc. information of the system
+    """
+    Class containing all bonding etc. information of the system
     """
 
     def __init__(self, config: SimpleNamespace, qm_out: HessianOutput):
+        """Create a new instace of Topology.
+
+        Keyword arguments
+        -----------------
+            config : SimpleNamespace
+                The [ff] section of the global config data structure
+            qm_out : HessianOutput
+                The output from hessian file reading
+        """
         self.n_equiv = config.n_equiv
         self.elements = qm_out.elements
         self.n_atoms = len(self.elements)

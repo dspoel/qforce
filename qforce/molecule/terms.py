@@ -19,6 +19,7 @@ from .baseterms import TermFactory
 
 
 class Terms(MappingIterator):
+    """Class which stores ForceField terms for the molecule."""
 
     _term_factories = {
             'bond': BondTerm,
@@ -63,9 +64,25 @@ class Terms(MappingIterator):
     @classmethod
     def from_topology(cls, config: SimpleNamespace, topo: Topology, non_bonded: NonBonded,
                       not_fit: list[str]=['dihedral/flexible', 'non_bonded']) -> Terms:
+        """Get ForceField terms from the topology of the molecule.
+
+        Keyword arguments
+        -----------------
+            config : SimpleNamespace
+                The global config data structure
+            topo : Topology
+                topology of the molecule
+            non_bonded : NonBonded
+                Stores all non bonded interaction information
+            not_fit : list[str] (default ['dihedral/flexible', 'non_bonded'])
+
+        Returns
+        -------
+            A new instance of Terms containing all ForceField terms for the molecule
+        """
         print('Running from_topology')
-        print('Passed config:')
-        print(config.terms.__dict__.items())
+        # print('Passed config:')
+        # print(config.terms.__dict__.items())
         ignore = [name for name, term_enabled in config.terms.__dict__.items() if not term_enabled]
         print(f'Ignore: {ignore}')
         not_fit_terms = [term for term in not_fit if term not in ignore]
