@@ -69,6 +69,19 @@ frag_lib = ~/qforce_fragments :: folder
 
     def __init__(self, fragments: list[Fragment], mol: Molecule, job: SimpleNamespace,
                  all_config: SimpleNamespace):
+        """Initialize a new DihedralScan object.
+
+        Keyword arguments
+        -----------------
+            fragments : list[Fragment]
+                list of fragments to scan
+            mol : Molecule
+                Molecule object
+            job : SimpleNamespace
+                job settings data structure
+            all_config : SimpleNamespace
+                global config data structure
+        """
         self.frag_dir = job.frag_dir
         self.job_name = job.name
         self.mdp_file = f'{job.md_data}/default.mdp'
@@ -81,6 +94,7 @@ frag_lib = ~/qforce_fragments :: folder
         final_energy, params = self.scan_dihedrals(fragments, mol, all_config, all_dih_terms,
                                                    weights)
         self.finalize_results(fragments, final_energy, all_dih_terms, params)
+
 
     def arrange_data(self, mol: Molecule,
                      fragments: list[Fragment]) -> tuple[list[Fragment],
@@ -121,6 +135,7 @@ frag_lib = ~/qforce_fragments :: folder
 
         return fragments, all_dih_terms, np.array(weights)
 
+
     def finalize_results(self, fragments: list[Fragment], final_energy: np.ndarray,
                          all_dih_terms: list[DihedralBaseTerm], params: np.ndarray) -> None:
         sum_scans = 0
@@ -158,6 +173,7 @@ frag_lib = ~/qforce_fragments :: folder
             for bad_fit in bad_fits:
                 print(f'         - {bad_fit}')
             print('         Please check manually to see if you find the accuracy satisfactory.\n')
+
 
     def scan_dihedrals(self, fragments: list[Fragment], mol: Molecule, all_config: SimpleNamespace,
                        all_dih_terms: list[DihedralBaseTerm],
@@ -211,6 +227,7 @@ frag_lib = ~/qforce_fragments :: folder
 
         return final_energy, params
 
+
     @staticmethod
     def move_capping_atoms(fragments: list[Fragment]) -> None:
         for frag in fragments:
@@ -219,6 +236,7 @@ frag_lib = ~/qforce_fragments :: folder
                     vec, dist = get_dist(coord[cap['idx']], coord[cap['connected']])
                     new_vec = vec / dist * cap['b_length']
                     coord[cap['idx']] = coord[cap['connected']] + new_vec
+
 
     def scan_dihed_qforce(self, all_config: SimpleNamespace, frag: Fragment, scan_dir: str,
                           mol: Molecule, n_run: int, nsteps: int=1000) -> np.ndarray:
@@ -238,6 +256,7 @@ frag_lib = ~/qforce_fragments :: folder
             md_energies.append(atom.get_potential_energy())
             frag.coords[i] = coords
         return np.array(md_energies)
+
 
     def scan_dihed_gromacs(self, all_config: SimpleNamespace, frag: Fragment,
                            scan_dir: str, mol: Molecule, n_run: int) -> np.ndarray:
@@ -265,10 +284,12 @@ frag_lib = ~/qforce_fragments :: folder
             frag.coords[i] = coords
         return np.array(md_energies)
 
+
     @staticmethod
     def calc_fit_angles(frag: Fragment, coords: np.ndarray) -> None:
         for term in frag.fit_terms:
             term['angles'].append(get_dihed(coords[term['atomids']])[0])
+
 
     @staticmethod
     def find_restraints(frag, coord, n_run):
@@ -286,6 +307,7 @@ frag_lib = ~/qforce_fragments :: folder
 
         return restraints
 
+
     @staticmethod
     def fit_dihedrals(fragments: list[Fragment], energy_diffs: list[float], weights: np.ndarray,
                       all_dih_terms: list[DihedralBaseTerm]) -> tuple[np.ndarray, np.ndarray]:
@@ -295,6 +317,7 @@ frag_lib = ~/qforce_fragments :: folder
         params = optimize.minimize(calc_multi_rb_obj, x0=np.zeros(len(all_dih_terms)*6),
                                    args=(matrix, weights, energy_diffs)).x
         return params, matrix
+
 
     @staticmethod
     def symmetrize_dihedral(angles, energies, regions):
@@ -333,6 +356,7 @@ frag_lib = ~/qforce_fragments :: folder
         sym_profile -= sym_profile.min()
         return sym_angle, sym_profile
 
+
     def plot_results(self, frag: Fragment, md_energies: np.ndarray, title: str,
                      r_squared: float=None) -> None:
         angles_deg = np.degrees(frag.qm_angles)
@@ -351,6 +375,7 @@ frag_lib = ~/qforce_fragments :: folder
         f.savefig(f"{self.frag_dir}/{title}_data_{frag.id}.pdf", bbox_inches='tight')
         plt.close()
 
+
     def plot_fit(self, frag: Fragment, diff: np.ndarray, fit: np.ndarray,
                  r_squared: float) -> None:
         angles_deg = np.degrees(frag.qm_angles)
@@ -367,6 +392,7 @@ frag_lib = ~/qforce_fragments :: folder
         plt.legend(ncol=2, bbox_to_anchor=(1.03, 1.12), frameon=False)
         f.savefig(f"{self.frag_dir}/fit_data_{frag.id}.pdf", bbox_inches='tight')
         plt.close()
+
 
     def _set_symmetrize(self):
         sym_dict = {}

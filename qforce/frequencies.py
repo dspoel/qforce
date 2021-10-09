@@ -13,6 +13,20 @@ from .elements import ATOMMASS, ATOM_SYM
 
 def calc_qm_vs_md_frequencies(job: SimpleNamespace, qm: HessianOutput,
                               md_hessian: np.ndarray) -> None:
+    """Calculate QM and MD vibrational frequencies.
+
+    Keyword arguments
+    -----------------
+        job : SimpleNamespace
+            job settings data structure
+        qm : HessianOutput
+            object with information from QM hessian files
+        md_hessian : np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,)
+            the flattened 1D MD hessian
+    Returns
+    -------
+        None
+    """
     qm_freq, qm_vec = calc_vibrational_frequencies(qm.hessian, qm)
     md_freq, md_vec = calc_vibrational_frequencies(md_hessian, qm)
     mean_percent_error = write_vibrational_frequencies(qm_freq, qm_vec, md_freq, md_vec, qm, job)
