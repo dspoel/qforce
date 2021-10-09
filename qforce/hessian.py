@@ -182,6 +182,24 @@ def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
 
 def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
                 psave: str) -> np.ndarray:
+    """Fit the constants of the terms to match MD and QM hessian.
+
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            the global config data structure
+        mol : Molecule
+            the Molecule object representing the current molecule
+        qm : HessianOutput
+            output of the QM hessian file read
+        psave : str (might be None)
+            path to the parameter save file
+
+    Returns
+    -------
+        Flattened MD hessian after terms have been fit:
+        np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,)
+    """
     print('Running fit_hessian')
 
     if config.opt.average == 'before':
@@ -334,6 +352,20 @@ def calc_forces_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.
 
 
 def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
+    """Average some terms of the same type involving the same type of atoms.
+    For instance, average all C-C equilibirum bond lengths.
+
+    Keyword arguments
+    -----------------
+        terms: Terms
+            molecule terms
+        config: SimpleNamespace
+            global config data structure
+
+    Returns
+    -------
+        None
+    """
     print('Entering average_unique_minima')
     unique_terms = {}
     trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
@@ -372,18 +404,40 @@ def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
 
 
 def _get_terms_bond_str(config: SimpleNamespace) -> str:
+    """Based on the global config, check which type of bond potential is active.
+
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            global config data structure
+
+    Returns
+    -------
+        name of the active bond potential (str)
+    """
     if config.terms.morse:
         return 'morse'
     elif config.terms.morse_mp:
         return 'morse_mp'
     elif config.terms.morse_mp2:
         return 'morse_mp2'
-    else:  # regular bond
+    else:  # regular harmonic bond
         return 'bond'
 
 
 def _get_terms_angle_str(config: SimpleNamespace) -> str:
-    if config.terms.angle:
+    """Based on the global config, check which type of angle potential is active.
+
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            global config data structure
+
+    Returns
+    -------
+        name of the active angle potential (str)
+    """
+    if config.terms.angle:  # harmonic angle
         return 'angle'
     elif config.terms.poly_angle:
         return 'poly_angle'
