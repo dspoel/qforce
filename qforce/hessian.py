@@ -14,12 +14,51 @@ from .molecule.baseterms import TermABC
 
 
 def nllsqfuncfloat(params: np.ndarray, qm: HessianOutput, qm_hessian: np.ndarray,
-                   mol: Molecule, sorted_terms: TermABC, loss: list[float]=None) -> float:
+                   mol: Molecule, loss: list[float]=None) -> float:
+    """Function to be minimized by regular non-linear optimizers.
+
+    Keyword arguments
+    -----------------
+        params : np.ndarray[float](sum of n_params for each term to be fit,)
+            stores all parameters for the terms
+        qm : HessianOutput
+            output from QM hessian file read
+        qm_hessian : np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,)
+            the flattened 1D QM hessian
+        mol : Molecule
+            the Molecule object
+        loss : list[float] (default None)
+            the list to keep track of the loss function over the optimization process
+
+    Returns
+    -------
+        the loss (float)
+    """
     return 0.5 * np.sum(nllsqfunc(params, qm, qm_hessian, mol, sorted_terms, loss)**2)
 
 
 def nllsqfunc(params: np.ndarray, qm: HessianOutput, qm_hessian: np.ndarray, mol: Molecule,
-              sorted_terms: list[TermABC], loss=None) -> np.ndarray:
+              loss: list[float]=None) -> np.ndarray:
+    """Residual function for non-linear least-squares optimization based on the difference of MD
+    and QM hessians.
+
+    Keyword arguments
+    -----------------
+        params : np.ndarray[float](sum of n_params for each term to be fit,)
+            stores all parameters for the terms
+        qm : HessianOutput
+            output from QM hessian file read
+        qm_hessian : np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,)
+            the flattened 1D QM hessian
+        mol : Molecule
+            the Molecule object
+        loss : list[float] (default None)
+            the list to keep track of the loss function over the optimization process
+
+    Returns
+    -------
+        The np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,) of residuals
+    """
     hessian = []
     non_fit = []
     # print("Calculating the MD hessian matrix elements...")
@@ -48,6 +87,23 @@ def nllsqfunc(params: np.ndarray, qm: HessianOutput, qm_hessian: np.ndarray, mol
 
 def read_input_params(pinput: str, sorted_terms: list[TermABC], mol: Molecule,
                       x0: np.ndarray) -> None:
+    """Read parameters from .json file into an existing array to kickstart optimization.
+
+    Keyword arguments
+    -----------------
+        pinput : str
+            path to the input file
+        sorted_terms : list[TermABC]
+            list of terms sorted by their ID
+        mol : Molecule
+            the Molecule object
+        x0 : np.ndarray[float](sum of n_params for each term to be fit,)
+            array to write parameters into, stores all parameters for the terms
+
+    Returns
+    -------
+        None
+    """
     in_file = open(pinput)
     dct = json.load(in_file)
     in_file.close()
@@ -57,12 +113,27 @@ def read_input_params(pinput: str, sorted_terms: list[TermABC], mol: Molecule,
     for i, term in enumerate(sorted_terms):
         if term.idx < mol.terms.n_fitted_terms:
             if term.idx not in seen_idx:  # Since 0 is seen by default, this won't be True in the first iteration
-                index += sorted_terms[i - 1].n_params  # Increase index by the number of parameters of the previous term
+                index += sorted_terms[i-1].n_params  # Increase index by the number of parameters of the previous term
                 seen_idx.append(term.idx)
             x0[index:index + term.n_params] = np.array(dct[str(term)])
 
 
 def write_opt_params(psave: str, sorted_terms: list[TermABC], mol: Molecule) -> None:
+    """Write optimized parameters to a .json file.
+
+    Keyword arguments
+    -----------------
+        psave : str
+            path to the desired output file
+        sorted_terms : list[TermABC]
+            list of terms sorted by their ID
+        mol : Molecule
+            the Molecule object
+
+    Returns
+    -------
+        None
+    """
     with open(psave, 'w') as f:
         dct = {}
         for term in sorted_terms:
@@ -75,6 +146,28 @@ def write_opt_params(psave: str, sorted_terms: list[TermABC], mol: Molecule) -> 
 
 def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
                    pinput: str=None, psave: str=None, process_file: str=None) -> np.ndarray:
+    """Fit the constants of the terms to match MD and QM hessian.
+
+    Keyword arguments
+    -----------------
+        config : SimpleNamespace
+            the global config data structure
+        mol : Molecule
+            the Molecule object representing the current molecule
+        qm : HessianOutput
+            output of the QM hessian file read
+        pinput : str (default None)
+            path to the parameter input file
+        psave : str (default None)
+            path to the parameter save file
+        process_file : str (default None)
+            path to the file to store the loss over the optimization process
+
+    Returns
+    -------
+        Flattened MD hessian after terms have been fit:
+        np.ndarray[float]((3*n_atoms)(3*n_atoms + 1)/2,)
+    """
     print('Running fit_hessian_nl')
 
     qm_hessian = np.copy(qm.hessian)
@@ -88,7 +181,7 @@ def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
     sorted_terms = sorted(mol.terms, key=lambda trm: trm.idx)
 
     # Create initial conditions for optimization
-    x0 = 400 * np.ones(mol.terms.n_fitted_params)  # Initial values for term params
+    x0 = 400 * np.ones(mol.terms.n_fitted_params)  # Initial values for term parameters
     # Read them from pinput if given
     if pinput is not None:
         print(f'Reading input params from {pinput}...')
@@ -102,8 +195,8 @@ def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
     print(f'x0: {x0}')
 
     # Get function value for x0 and ask the user if continue
-    value = nllsqfuncfloat(x0, qm, qm_hessian, mol, sorted_terms)
-    # value = 0.5 * np.sum(nllsqfunc(x0, qm, qm_hessian, mol, sorted_terms)**2)
+    value = nllsqfuncfloat(x0, qm, qm_hessian, mol)
+    # value = 0.5 * np.sum(nllsqfunc(x0, qm, qm_hessian, mol)**2)
     print(f'Initial loss: {value}')
     check_continue(config)
 
@@ -111,7 +204,7 @@ def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
     result = None
     loss = []
     print(f'verbose = {config.opt.verbose}')
-    args = (qm, qm_hessian, mol, sorted_terms, loss)
+    args = (qm, qm_hessian, mol, loss)
     if config.opt.nonlin_alg == 'trf':
         print('Running trf optimizer...')
         result = optimize.least_squares(nllsqfunc, x0, args=args, bounds=(0, np.inf), method='trf',
@@ -181,8 +274,10 @@ def fit_hessian_nl(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
 
 
 def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
-                psave: str) -> np.ndarray:
+                psave: str=None) -> np.ndarray:
     """Fit the constants of the terms to match MD and QM hessian.
+    This function only works when the constants have a linear dependency with the force exerted by
+    the terms.
 
     Keyword arguments
     -----------------
@@ -192,7 +287,7 @@ def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
             the Molecule object representing the current molecule
         qm : HessianOutput
             output of the QM hessian file read
-        psave : str (might be None)
+        psave : str (default None)
             path to the parameter save file
 
     Returns
@@ -277,10 +372,23 @@ def fit_hessian(config: SimpleNamespace, mol: Molecule, qm: HessianOutput,
 
 
 def calc_hessian(coords: np.ndarray, mol: Molecule) -> np.ndarray:
-    """
-    Scope:
+    """Calculate 2D MD hessian with unity parameters for the terms.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for each atom in the molecule
+        mol : Molecule
+            the Molecule object
+
+    Returns
+    -------
+        The 2D MD hessian as np.ndarray[float](3*n_atoms, 3*n_atoms, n_fitted_terms+1)
+        The +1 corresponds to forces from NonBonded terms
+
+    Scope
     -----
-    Perform displacements to calculate the MD hessian numerically.
+        Perform displacements to calculate the MD hessian numerically.
     """
     full_hessian = np.zeros((3*mol.topo.n_atoms, 3*mol.topo.n_atoms, mol.terms.n_fitted_terms+1))
 
@@ -297,6 +405,26 @@ def calc_hessian(coords: np.ndarray, mol: Molecule) -> np.ndarray:
 
 
 def calc_hessian_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.ndarray:
+    """Calculate 2D MD hessian with provided parameters for the terms.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for each atom in the molecule
+        mol : Molecule
+            the Molecule object
+        params : np.ndarray[float](sum of n_params for each term to be fit,)
+            stores all parameters for the terms
+
+    Returns
+    -------
+        The 2D MD hessian as np.ndarray[float](3*n_atoms, 3*n_atoms, n_fitted_terms+1)
+        The +1 corresponds to forces from NonBonded terms
+
+    Scope
+    -----
+        Perform displacements to calculate the MD hessian numerically.
+    """
     full_hessian = np.zeros((3*mol.topo.n_atoms, 3*mol.topo.n_atoms, mol.terms.n_fitted_terms+1))
 
     for a in range(mol.topo.n_atoms):
