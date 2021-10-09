@@ -25,7 +25,25 @@ Prompt a warning when if any point has an error larger than 2kJ/mol.
 """
 
 
-def fragment(mol: Molecule, qm: QM, job: SimpleNamespace, config: SimpleNamespace) -> list[Fragment]:
+def fragment(mol: Molecule, qm: QM, job: SimpleNamespace,
+             config: SimpleNamespace) -> list[Fragment]:
+    """Examine the molecule and extract fragments.
+
+    Keyword arguments
+    -----------------
+        mol : Molecule
+            the Molecule object
+        qm : QM
+            object which can read and write QM hessian files
+        job : SimpleNamespace
+            job settings data structure
+        config : SimpleNamespace
+            global config data structure
+
+    Returns
+    -------
+        A list of Fragment objects
+    """
     fragments = []
     unique_dihedrals = {}
 
@@ -50,6 +68,17 @@ def fragment(mol: Molecule, qm: QM, job: SimpleNamespace, config: SimpleNamespac
 
 
 def reset_data_files(frag_dir: str) -> None:
+    """Remove exising fragment files.
+
+    Keyword arguments
+    -----------------
+        frag_dir : str
+            path to the fragment directory within the <molecule_name>_qforce directory
+
+    Returns
+    -------
+        None
+    """
     for data in ['missing', 'have']:
         data_path = f'{frag_dir}/{data}'
         if os.path.exists(data_path):
@@ -58,6 +87,23 @@ def reset_data_files(frag_dir: str) -> None:
 
 def check_and_notify(job: SimpleNamespace, config: SimpleNamespace, n_unique: int,
                      n_have: int) -> None:
+    """Check for dihedral scan data and notify in case there are missing files.
+
+    Keyword arguments
+    -----------------
+        job : SimpleNamespace
+            job settings data structures
+        config : SimpleNamespace
+            [scan] part of the global config data structures
+        n_unique : int
+            the number of unique flexible dihedrals
+        n_have : int
+            the amount of unique dihedrals for which scan data already exists
+
+    Returns
+    -------
+        None
+    """
     n_missing = n_unique - n_have
     if n_unique == 0:
         print('There are no flexible dihedrals.')
@@ -84,6 +130,23 @@ class Fragment():
 
     def __init__(self, job: SimpleNamespace, config: SimpleNamespace, mol: Molecule,
                  qm: QM, scanned_atomids: np.ndarray, name: str):
+        """Initialize a new Fragment.
+
+        Keyword arguments
+        -----------------
+            job : SimpleNamespace
+                Job settings data structure
+            config : SimpleNamespace
+                The global config data structure
+            mol : Molecule
+                The Molecule object
+            qm : QM
+                The QM object to read and write QM hessians
+            scanned_atomids : np.ndarray[int](4,)
+                The atom IDs which are part of the dihedral
+            name : str
+                Name of the fragment
+        """
         self.central_atoms = tuple(scanned_atomids[1:3])
         self.scanned_atomids = scanned_atomids
         self.atomids = list(scanned_atomids[1:3])
