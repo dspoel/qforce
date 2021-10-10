@@ -11,6 +11,7 @@ from .energies import bd_energy
 
 
 class BondTerm(TermBase):
+    """Harmonic bond term."""
     name = 'BondTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -33,6 +34,7 @@ class BondTerm(TermBase):
 
 
 class MorseTerm(TermBase):
+    """Morse bond term."""
     name = 'MorseTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -58,6 +60,8 @@ class MorseTerm(TermBase):
 
 
 class MorseMPTerm(TermBase):
+    """Morse multi-parameter term. D_ij is considered the first parameter and
+    beta_ij the second."""
     name = 'MorseMPTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -79,6 +83,8 @@ class MorseMPTerm(TermBase):
 
 
 class MorseMP2Term(TermBase):
+    """Morse multi-parameter term. D_ij is considered the first parameter and
+    k_ij the second."""
     name = 'MorseMP2Term'
 
     def _calc_forces(self, crd, force, fconst):
@@ -100,6 +106,7 @@ class MorseMP2Term(TermBase):
 
 
 class AngleTerm(TermBase):
+    """Harmonic angle term."""
     name = 'AngleTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -127,6 +134,8 @@ class AngleTerm(TermBase):
 
 
 class PolyAngleTerm(TermBase):
+    """Polynomial angle term. Keeps track of the order of the term.
+    E.g. order 2 corresponds to a regular harmonic angle term."""
 
     name = 'PolyAngleTerm'
 
@@ -163,6 +172,7 @@ class PolyAngleTerm(TermBase):
 
 
 class UreyAngleTerm(TermBase):
+    """Urey-Bradley term."""
     name = 'UreyAngleTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -190,6 +200,7 @@ class UreyAngleTerm(TermBase):
 
 
 class CrossBondBondTerm(TermBase):
+    """Bond-Bond cross-term."""
     name = 'CrossBondBondTerm'
 
     def _calc_forces(self, crd, force, fconst):
@@ -220,6 +231,7 @@ class CrossBondBondTerm(TermBase):
 
 
 class CrossBondAngleTerm(TermBase):
+    """Bond-Angle cross-term."""
     name = 'CrossBondAngleTerm'
 
     def _calc_forces(self, crd, force, fconst):
