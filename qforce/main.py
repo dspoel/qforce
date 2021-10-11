@@ -51,9 +51,9 @@ def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput
     print(job, '\n')
     pinput = add_job_dir_to_json_name(job.dir, pinput)
     print(f'pinput path: {pinput}')
-    pinput = add_job_dir_to_json_name(job.dir, psave)
+    psave = add_job_dir_to_json_name(job.dir, psave)
     print(f'psave path: {psave}')
-    pinput = add_job_dir_to_json_name(job.dir, process_file)
+    process_file = add_job_dir_to_json_name(job.dir, process_file)
     print(f'process_file path: {process_file}')
 
     check_wellposedness(config)

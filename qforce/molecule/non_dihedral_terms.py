@@ -165,7 +165,9 @@ class PolyAngleTerm(TermBase):
                 a_type = sorted([f"{topo.types[a2]}({b21}){topo.types[a1]}",
                                  f"{topo.types[a2]}({b23}){topo.types[a3]}"])
                 a_type = f"{a_type[0]}_{a_type[1]}"
-                for order in range(1, config.term_custom.poly_angle_order + 1):
+                mino = config.term_custom.poly_angle_min_order
+                maxo = config.term_custom.poly_angle_max_order
+                for order in range(mino, maxo + 1):
                     terms.append(cls([a1, a2, a3], theta, a_type, 1, order))
 
         return terms

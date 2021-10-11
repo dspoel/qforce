@@ -85,6 +85,8 @@ def check_wellposedness(config: SimpleNamespace) -> None:
     """
     if config.opt.fit_type == 'linear' and (config.terms.morse or config.terms.morse_mp):
         raise Exception('Linear optimization is not valid for Morse bond potential')
+    elif config.term_custom.poly_angle_min_order < 0:
+        raise Exception('Minimum order for polynomial angle terms cannot be negative')
     elif (config.terms.morse and config.terms.morse_mp) or (config.terms.morse and config.terms.morse_mp2):
         raise Exception('Morse and Morse MP bonds cannot be used at the same time')
     elif config.terms.angle and config.terms.poly_angle:
@@ -163,4 +165,4 @@ def add_job_dir_to_json_name(job_dir: str, path: str) -> Union[str, None]:
     -------
         The composite path (str) if "path" is not None, else None
     """
-    return job.dir + '/' + path + '.json' if path is not None else None
+    return job_dir + '/' + path + '.json' if path is not None else None

@@ -213,9 +213,9 @@ def calc_poly_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fcons
     cos_theta = math.cos(theta)
     cos_theta_sq = cos_theta**2
     dtheta = theta - theta0
-    energy = (1/order) * fconst[0] * dtheta**order
-    if cos_theta_sq < 1:
-        st = - fconst[0] * (dtheta**(order-1)) / np.sqrt(1. - cos_theta_sq)
+    energy = fconst[0] * dtheta**order
+    if cos_theta_sq < 1 and order > 0:
+        st = - order * fconst[0] * (dtheta**(order-1)) / np.sqrt(1. - cos_theta_sq)
         sth = st * cos_theta
         c13 = st / r12 / r32
         c11 = sth / r12 / r12
@@ -312,7 +312,28 @@ def calc_cross_bond_angle(coords: np.ndarray, atoms: np.ndarray, r0s: np.ndarray
     return energy
 
 
-def calc_imp_diheds(coords, atoms, phi0, fconst, force):
+def calc_imp_diheds(coords: np.ndarray, atoms: np.ndarray, phi0: float, fconst: np.ndarray,
+                    force: np.ndarray) -> float:
+    """Calculate potential energy and force caused by an improper dihedral.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](4,)
+            Atom IDs involved in the dihedral
+        phi0 : float
+            Equilibrium dihedral angle in radians
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     phi, vec_ij, vec_kj, vec_kl, cross1, cross2 = get_dihed(coords[atoms])
     dphi = phi - phi0
     dphi = np.pi - (dphi + np.pi) % (2 * np.pi)  # dphi between -pi to pi
@@ -323,7 +344,28 @@ def calc_imp_diheds(coords, atoms, phi0, fconst, force):
 
 
 @jit(nopython=True)
-def calc_rb_diheds(coords, atoms, params, fconst, force):
+def calc_rb_diheds(coords: np.ndarray, atoms: np.ndarray, params: np.ndarray, fconst: np.ndarray,
+                   force: np.ndarray) -> float:
+    """Calculate potential energy and force caused by a flexible dihedral.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](4,)
+            Atom IDs involved in the dihedral
+        params : np.ndarray[float](6,)
+            Parameters for the term, in increasing order
+        fconst : np.ndarray[float](?,)
+            Constant for the potential term? Alredy encapsulated in <params>
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     phi, vec_ij, vec_kj, vec_kl, cross1, cross2 = get_dihed(coords[atoms])
     phi += np.pi
     cos_phi = np.cos(phi)
@@ -344,7 +386,28 @@ def calc_rb_diheds(coords, atoms, params, fconst, force):
 
 
 @jit(nopython=True)
-def calc_inversion(coords, atoms, phi0, fconst, force):
+def calc_inversion(coords: np.ndarray, atoms: np.ndarray, phi0: float, fconst: np.ndarray,
+                   force: np.ndarray) -> float:
+    """Calculate potential energy and force caused by an inversion dihedral.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](4,)
+            Atom IDs involved in the dihedral
+        phi0 : float
+            Equilibrium dihedral angle in radians
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     phi, vec_ij, vec_kj, vec_kl, cross1, cross2 = get_dihed(coords[atoms])
     phi += np.pi
 
@@ -368,6 +431,27 @@ def calc_inversion(coords, atoms, phi0, fconst, force):
 
 @jit(nopython=True)
 def calc_periodic_dihed(coords, atoms, phi0, fconst, force):
+    """Calculate potential energy and force caused by a periodic
+     dihedral.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](4,)
+            Atom IDs involved in the dihedral
+        phi0 : float
+            Equilibrium dihedral angle in radians
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     phi, vec_ij, vec_kj, vec_kl, cross1, cross2 = get_dihed(coords[atoms])
     mult = 3
     phi0 = 0
@@ -411,7 +495,33 @@ def dot_prod(a: np.ndarray, b: np.ndarray) -> float:
 
 @jit("void(f8[:,:], i8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8)",
      nopython=True)
-def calc_dih_force(force, a, vec_ij, vec_kj, vec_kl, cross1, cross2, ddphi):
+def calc_dih_force(force, a, vec_ij, vec_kj, vec_kl, cross1, cross2, ddphi) -> None:
+    """Calculate the force exerted by a dihedral.
+
+    Keyword arguments
+    ----------------
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+        a : np.ndarray[int](4,)
+            Atom IDs involved in the dihedral
+        vec_ij : np.ndarray[float](3,)
+            XYZ vector pointing from j to i
+        vec_kj : np.ndarray[float](3,)
+            XYZ vector pointing from j to k
+        vec_kl : np.ndarray[float](3,)
+            XYZ vector pointing from l to k
+        cross1 : np.ndarray[float](3,)
+            XYZ vector which is the result of cross_prod(<vec_ij>, <vec_kj>)
+        cross2 : np.ndarray[float](3,)
+            XYZ vector which is the result of cross_prod(<vec_kj>, <vec_kl>)
+        ddphi : float
+            k_{ijkl}^{\gamma} * (\phi_{ijkl} - \phi_{ijkl}^{0})
+
+    Returns
+    -------
+        None
+    """
     inner1 = dot_prod(cross1, cross1)
     inner2 = dot_prod(cross2, cross2)
     nrkj2 = dot_prod(vec_kj, vec_kj)

@@ -21,8 +21,11 @@ class Initialize(Colt):
 debug_mode = False :: bool
 
 [term_custom]
-# Order of polynomial angle terms
-poly_angle_order = 4 :: int :: >0
+# Max order of polynomial angle terms
+poly_angle_max_order = 4 :: int :: >0
+
+# Min order of polynomial angle terms
+poly_angle_min_order = 1 :: int
 
 [opt]
 # Verbose settings for optimizer
