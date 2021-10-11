@@ -151,7 +151,7 @@ def calc_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fconst: np
     -----------------
         coords : np.ndarray[float](n_atoms, 3)
             XYZ coordinates for every atom in the molecule
-        atoms : np.ndarray[int](2,)
+        atoms : np.ndarray[int](3,)
             Atom IDs involved in the bond
         theta0 : float
             Angle of equilibrium in radians
@@ -185,7 +185,30 @@ def calc_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fconst: np
     return energy
 
 @jit(nopython=True)
-def calc_poly_angles(coords, atoms, theta0, fconst, force, order):
+def calc_poly_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fconst: np.ndarray,
+                     force: np.ndarray, order: int) -> float:
+    """Calculate the potential energy and forces caused by a polynomial-harmonic angle.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](3,)
+            Atom IDs involved in the bond
+        theta0 : float
+            Angle of equilibrium in radians
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+        order : int
+            the order of the term (2 makes it a regular harmonic angle)
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     theta, vec12, vec32, r12, r32 = get_angle(coords[atoms])
     cos_theta = math.cos(theta)
     cos_theta_sq = cos_theta**2
@@ -205,7 +228,28 @@ def calc_poly_angles(coords, atoms, theta0, fconst, force, order):
         force[atoms[1]] -= f1 + f3
     return energy
 
-def calc_cross_bond_bond(coords, atoms, r0s, fconst, force):
+def calc_cross_bond_bond(coords: np.ndarray, atoms: np.ndarray, r0s: np.ndarray,
+                         fconst: np.ndarray, force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a Bond-Bond cross-term.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](3,)
+            Atom IDs involved in the bond
+        r0s : np.ndarray[float](2,)
+            Equilibrium bond lengths
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
     vec32, r32 = get_dist(coords[atoms[2]], coords[atoms[1]])
 
@@ -223,7 +267,28 @@ def calc_cross_bond_bond(coords, atoms, r0s, fconst, force):
 
     return energy
 
-def calc_cross_bond_angle(coords, atoms, r0s, fconst, force):
+def calc_cross_bond_angle(coords: np.ndarray, atoms: np.ndarray, r0s: np.ndarray,
+                          fconst: np.ndarray, force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a Bond-Angle cross-term.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](3,)
+            Atom IDs involved in the bond
+        r0s : np.ndarray[float](3,)
+            Equilibrium bond lengths
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
     vec32, r32 = get_dist(coords[atoms[2]], coords[atoms[1]])
     vec13, r13 = get_dist(coords[atoms[0]], coords[atoms[1]])
@@ -327,6 +392,17 @@ def convert_to_inversion_rb(fconst, phi0):
 
 @jit("f8(f8[:], f8[:])", nopython=True)
 def dot_prod(a: np.ndarray, b: np.ndarray) -> float:
+    """Compute the dot project between two XYZ vectors.
+
+    Keyword arguments
+    -----------------
+        a : np.ndarray[float](3,)
+        b : np.ndarray[float](3,)
+
+    Returns
+    -------
+        The dot product result (float)
+    """
     x = a[0]*b[0]
     y = a[1]*b[1]
     z = a[2]*b[2]
@@ -381,6 +457,18 @@ def calc_pairs(coords, atoms, params, force):
 
 @jit(nopython=True)
 def get_dist(coord1: np.ndarray, coord2: np.ndarray) -> tuple[np.ndarray, float]:
+    """Compute euclidean (L2) distance between two XYZ coordinates.
+
+    Keyword arguments
+    -----------------
+        coord1 : np.ndarray[float](3,)
+        coord2 : np.ndarray[float](3,)
+
+    Returns
+    -------
+        A vector 'pointing' from <coord2> to <coord1>
+        The L2 distance between <coord1> and <coord2>
+    """
     vec = coord1 - coord2
     r = norm(vec)
     return vec, r
@@ -388,6 +476,21 @@ def get_dist(coord1: np.ndarray, coord2: np.ndarray) -> tuple[np.ndarray, float]
 
 @jit(nopython=True)
 def get_angle(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray, float, float]:
+    """Compute the angle between two XYZ vectors.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](3, 3)
+            Contains XYZ for 3 atoms i, j, k with bonds i-j, k-j, which form the angle
+
+    Returns
+    -------
+        The angle (float) in radians between the i-j and k-j vectors (bonds)
+        A vector (np.ndarray[float](3,)) pointing from atom j to atom i
+        A vector (np.ndarray[float](3,)) pointing from atom j to atom k
+        The i-j bond length (float)
+        The k-j bond length (float)
+    """
     vec12, r12 = get_dist(coords[0], coords[1])
     vec32, r32 = get_dist(coords[2], coords[1])
     dot = np.dot(vec12/r12, vec32/r32)
@@ -400,6 +503,17 @@ def get_angle(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray, float,
 
 @jit(nopython=True)
 def get_angle_from_vectors(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    """Compute the angle between two XYZ vectors.
+
+    Keyword arguments
+    -----------------
+        vec1 : np.ndarray[float](3,)
+        vec2 : np.ndarray[float](3,)
+
+    Returns
+    -------
+        The angle (float) in radians between <vec1> and <vec2>
+    """
     dot = np.dot(vec1/norm(vec1), vec2/norm(vec2))
     if dot > 1.0:
         dot = 1.0
@@ -411,6 +525,22 @@ def get_angle_from_vectors(vec1: np.ndarray, vec2: np.ndarray) -> float:
 @jit(nopython=True)
 def get_dihed(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray,
                                            np.ndarray, np.ndarray, np.ndarray]:
+    """Get information about a dihedral given the coordinates of its four atoms i, j, k, and l.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](4, 3)
+            XYZ coordinates of the 4 atoms of the dihedral
+
+    Returns
+    -------
+        the angle (float) in radians of the dihedral
+        a vector pointing from j to i
+        a vector pointing from j to k
+        a vector pointing from l to k
+        a vector which is perpendicular to the plane defined by bonds i-j and k-j
+        a vector which is perpendicular to the plane defined by bonds k-j and k-l
+    """
     vec12, r12 = get_dist(coords[0], coords[1])
     vec32, r32 = get_dist(coords[2], coords[1])
     vec34, r34 = get_dist(coords[2], coords[3])
@@ -424,6 +554,17 @@ def get_dihed(coords: np.ndarray) -> tuple[float, np.ndarray, np.ndarray,
 
 @jit("f8[:](f8[:], f8[:])", nopython=True)
 def cross_prod(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Compute the cross-product (perpendicular vector) of two XYZ vectors.
+
+    Keyword arguments
+    -----------------
+        a : np.ndarray[float](3,)
+        b : np.ndarray[float](3,)
+
+    Returns
+    -------
+        A vector np.ndarray[double](3,) which is perpendicular to the plane containing <a> and <b>
+    """
     c = np.empty(3, dtype=np.double)
     c[0] = a[1]*b[2] - a[2]*b[1]
     c[1] = a[2]*b[0] - a[0]*b[2]
@@ -433,6 +574,16 @@ def cross_prod(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 @jit("f8(f8[:])", nopython=True)
 def norm(vec: np.ndarray) -> float:
+    """Compute the L2-norm of an XYZ vector.
+
+    Keyword arguments
+    -----------------
+        vec : np.ndarray[float](3,)
+
+    Returns
+    -------
+        The L2-norm result (flaot)
+    """
     # return math.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
     return math.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
 
