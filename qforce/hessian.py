@@ -440,11 +440,24 @@ def calc_hessian_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np
 
 
 def calc_forces(coords: np.ndarray, mol: Molecule) -> np.ndarray:
-    """
+    """Calculate the XYZ forces exerted in each atom by each ForceField term.
+    This function is made for linear fitting.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        mol : Molecule
+            the Molecule instance
+
+    Returns
+    -------
+        A np.ndarray[float](n_fitted_terms+1, n_atoms, 3) to store the XYZ forces exerted in
+        each atom by each term to be fit plus an extra row for the NonBonded terms (non_fit)
+
     Scope:
     ------
     For each displacement, calculate the forces from all terms.
-
     """
 
     force = np.zeros((mol.terms.n_fitted_terms+1, mol.topo.n_atoms, 3))
@@ -457,11 +470,25 @@ def calc_forces(coords: np.ndarray, mol: Molecule) -> np.ndarray:
 
 
 def calc_forces_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.ndarray:
-    """
+    """Calculate the XYZ forces exerted in each atom by each ForceField term.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        mol : Molecule
+            the Molecule instance
+        params : np.ndarray[float](sum of n_params for each term to be fit,)
+            stores all parameters for the terms
+
+    Returns
+    -------
+        A np.ndarray[float](n_fitted_terms+1, n_atoms, 3) to store the XYZ forces exerted in
+        each atom by each term to be fit plus an extra row for the NonBonded terms (non_fit)
+
     Scope:
     ------
     For each displacement, calculate the forces from all terms.
-
     """
 
     force = np.zeros((mol.terms.n_fitted_terms+1, mol.topo.n_atoms, 3))

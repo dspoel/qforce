@@ -9,7 +9,28 @@ from numba import jit
 
 
 @jit(nopython=True)
-def calc_bonds(coords, atoms, r0, fconst, force):
+def calc_bonds(coords: np.ndarray, atoms: np.ndarray, r0: float, fconst: np.ndarray,
+               force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a harmonic bond.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](2,)
+            Atom IDs involved in the bond
+        r0 : float
+            Bond equilibrium length
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
     energy = 0.5 * fconst[0] * (r12-r0)**2
     f = - fconst[0] * vec12 * (r12-r0) / r12
@@ -19,7 +40,30 @@ def calc_bonds(coords, atoms, r0, fconst, force):
 
 
 @jit(nopython=True)
-def calc_morse(coords, atoms, r0, fconst, force, well_depth):
+def calc_morse(coords: np.ndarray, atoms: np.ndarray, r0: float, fconst: np.ndarray,
+               force: np.ndarray, well_depth: float) -> float:
+    """Calculate the potential energy and forces caused by a Morse bond.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](2,)
+            Atom IDs involved in the bond
+        r0 : float
+            Bond equilibrium length
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+        well_depth : float
+            the well depth of the current bond type
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
     beta = math.sqrt(fconst[0]/(2*well_depth))
     exp_term = math.exp(-beta*(r12-r0))
@@ -30,7 +74,28 @@ def calc_morse(coords, atoms, r0, fconst, force, well_depth):
     return energy
 
 @jit(nopython=True)
-def calc_morse_mp(coords, atoms, r0, fconst, force):
+def calc_morse_mp(coords: np.ndarray, atoms: np.ndarray, r0: float, fconst: np.ndarray,
+                  force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a Morse multi-parameter bond.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](2,)
+            Atom IDs involved in the bond
+        r0 : float
+            Bond equilibrium length
+        fconst : np.ndarray[float](2,)
+            Constants for the potential term. First the well depth, next beta_ij
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     # fconst[0] -> well depth
     # fconst[1] -> beta
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
@@ -43,7 +108,28 @@ def calc_morse_mp(coords, atoms, r0, fconst, force):
 
 
 @jit(nopython=True)
-def calc_morse_mp2(coords, atoms, r0, fconst, force):
+def calc_morse_mp2(coords: np.ndarray, atoms: np.ndarray, r0: float, fconst: np.ndarray,
+                   force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a Morse multi-parameter-v2 bond.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](2,)
+            Atom IDs involved in the bond
+        r0 : float
+            Bond equilibrium length
+        fconst : np.ndarray[float](2,)
+            Constants for the potential term. First the well depth, next k_ij
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     # fconst[0] -> well depth
     # fconst[1] -> k_ij
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
@@ -57,7 +143,28 @@ def calc_morse_mp2(coords, atoms, r0, fconst, force):
 
 
 @jit(nopython=True)
-def calc_angles(coords, atoms, theta0, fconst, force):
+def calc_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fconst: np.ndarray,
+                force: np.ndarray) -> float:
+    """Calculate the potential energy and forces caused by a harmonic angle.
+
+    Keyword arguments
+    -----------------
+        coords : np.ndarray[float](n_atoms, 3)
+            XYZ coordinates for every atom in the molecule
+        atoms : np.ndarray[int](2,)
+            Atom IDs involved in the bond
+        theta0 : float
+            Angle of equilibrium in radians
+        fconst : np.ndarray[float](1,)
+            Constant for the potential term
+        force : np.ndarray[float](n_atoms, 3)
+            Stores the XYZ forces exerted in every atom by the term which is calling
+            this function
+
+    Returns
+    -------
+        The potential energy (float)
+    """
     theta, vec12, vec32, r12, r32 = get_angle(coords[atoms])
     cos_theta = math.cos(theta)
     cos_theta_sq = cos_theta**2
