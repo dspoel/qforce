@@ -32,7 +32,8 @@ def calc_bonds(coords: np.ndarray, atoms: np.ndarray, r0: float, fconst: np.ndar
         The potential energy (float)
     """
     vec12, r12 = get_dist(coords[atoms[0]], coords[atoms[1]])
-    energy = 0.5 * fconst[0] * (r12-r0)**2
+    # energy = 0.5 * fconst[0] * (r12-r0)**2
+    energy = 0.5 * fconst[0] * (r12 - r0)*(r12 - r0)
     f = - fconst[0] * vec12 * (r12-r0) / r12
     force[atoms[0]] += f
     force[atoms[1]] -= f
@@ -167,9 +168,11 @@ def calc_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fconst: np
     """
     theta, vec12, vec32, r12, r32 = get_angle(coords[atoms])
     cos_theta = math.cos(theta)
-    cos_theta_sq = cos_theta**2
+    # cos_theta_sq = cos_theta**2
+    cos_theta_sq = cos_theta * cos_theta
     dtheta = theta - theta0
-    energy = 0.5 * fconst[0] * dtheta**2
+    # energy = 0.5 * fconst[0] * dtheta**2
+    energy = 0.5 * fconst[0] * dtheta*dtheta
     if cos_theta_sq < 1:
         st = - fconst[0] * dtheta / np.sqrt(1. - cos_theta_sq)
         sth = st * cos_theta
@@ -211,7 +214,8 @@ def calc_poly_angles(coords: np.ndarray, atoms: np.ndarray, theta0: float, fcons
     """
     theta, vec12, vec32, r12, r32 = get_angle(coords[atoms])
     cos_theta = math.cos(theta)
-    cos_theta_sq = cos_theta**2
+    # cos_theta_sq = cos_theta**2
+    cos_theta_sq = cos_theta * cos_theta
     dtheta = theta - theta0
     energy = fconst[0] * dtheta**order
     if cos_theta_sq < 1 and order > 0:
@@ -337,7 +341,8 @@ def calc_imp_diheds(coords: np.ndarray, atoms: np.ndarray, phi0: float, fconst: 
     phi, vec_ij, vec_kj, vec_kl, cross1, cross2 = get_dihed(coords[atoms])
     dphi = phi - phi0
     dphi = np.pi - (dphi + np.pi) % (2 * np.pi)  # dphi between -pi to pi
-    energy = 0.5 * fconst[0] * dphi**2
+    # energy = 0.5 * fconst[0] * dphi**2
+    energy = 0.5 * fconst[0] * dphi*dphi
     ddphi = - fconst[0] * dphi
     force = calc_dih_force(force, atoms, vec_ij, vec_kj, vec_kl, cross1, cross2, ddphi)
     return energy
@@ -422,7 +427,8 @@ def calc_inversion(coords: np.ndarray, atoms: np.ndarray, phi0: float, fconst: n
     energy += cos_phi * c1
 
     ddphi += 2 * c2 * cos_phi
-    energy += cos_phi**2 * c2
+    # energy += cos_phi**2 * c2
+    energy += cos_phi*cos_phi * c2
 
     ddphi *= - sin_phi
     force = calc_dih_force(force, atoms, vec_ij, vec_kj, vec_kl, cross1, cross2, ddphi)
@@ -468,7 +474,8 @@ def calc_periodic_dihed(coords, atoms, phi0, fconst, force):
 @jit(nopython=True)
 def convert_to_inversion_rb(fconst, phi0):
     cos_phi0 = np.cos(phi0)
-    c0 = fconst[0] * cos_phi0**2
+    # c0 = fconst[0] * cos_phi0**2
+    c0 = fconst[0] * cos_phi0*cos_phi0
     c1 = 2 * fconst[0] * cos_phi0
     c2 = fconst[0]
     return c0, c1, c2
@@ -553,10 +560,13 @@ def calc_pairs(coords, atoms, params, force):
     c6, c12, qq = params
     vec, r = get_dist(coords[atoms[0]], coords[atoms[1]])
     qq_r = qq/r
-    r_2 = 1/r**2
-    r_6 = r_2**3
+    # r_2 = 1/r**2
+    r_2 = 1 / (r*r)
+    # r_6 = r_2**3
+    r_6 = r_2*r_2*r_2
     c6_r6 = c6 * r_6
-    c12_r12 = c12 * r_6**2
+    # c12_r12 = c12 * r_6**2
+    c12_r12 = c12 * r_6*r_6
     energy = qq_r + c12_r12 - c6_r6
     f = (qq_r + 12*c12_r12 - 6*c6_r6) * r_2
     fk = f * vec
