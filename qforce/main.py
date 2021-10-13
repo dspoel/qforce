@@ -96,11 +96,10 @@ def run_qforce(input_arg: str, ext_q=None, ext_lj=None, config: str=None, pinput
     pc += 1
 
     #### Flexible dihedral scan phase ####
-    if config.ff.scan_dihedrals:
-        print_phase_header(PHASES[pc])
-        if len(mol.terms['dihedral/flexible']) > 0 and config.scan.do_scan:
-            fragments = fragment(mol, qm, job, config)
-            DihedralScan(fragments, mol, job, config)
+    print_phase_header(PHASES[pc])
+    if len(mol.terms['dihedral/flexible']) > 0 and config.scan.do_scan:
+        fragments = fragment(mol, qm, job, config)
+        DihedralScan(fragments, mol, job, config)
 
         check_continue(config, PHASES[pc], PHASES[pc+1])
     pc += 1
