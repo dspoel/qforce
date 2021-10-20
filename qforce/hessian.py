@@ -508,7 +508,7 @@ def calc_forces_nl(coords: np.ndarray, mol: Molecule, params: np.ndarray) -> np.
 
 def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
     """Average some terms of the same type involving the same type of atoms.
-    For instance, average all C-C equilibirum bond lengths.
+    For instance, average all C1-C2 equilibirum bond lengths.
 
     Keyword arguments
     -----------------
@@ -525,6 +525,8 @@ def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
     unique_terms = {}
     trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
             'poly_angle', 'dihedral/inversion']
+    # trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
+    #         'poly_angle', '_cross_bond_bond', '_cross_bond_angle', 'dihedral/inversion']
     averaged_terms = [x for x in trms if config.terms.__dict__[x]]
     print(f'Averaged terms: {averaged_terms}')
     for name in averaged_terms:
