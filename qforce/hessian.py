@@ -523,10 +523,10 @@ def average_unique_minima(terms: Terms, config: SimpleNamespace) -> None:
     """
     print('Entering average_unique_minima')
     unique_terms = {}
-    # trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
-    #         'poly_angle', 'dihedral/inversion']
     trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
-            'poly_angle', '_cross_bond_bond', '_cross_bond_angle', 'dihedral/inversion']
+            'poly_angle', 'dihedral/inversion']
+    # trms = ['bond', 'morse', 'morse_mp', 'morse_mp2', 'angle',
+    #         'poly_angle', '_cross_bond_bond', '_cross_bond_angle', 'dihedral/inversion']
     averaged_terms = [x for x in trms if config.terms.__dict__[x]]
     print(f'Averaged terms: {averaged_terms}')
     for name in averaged_terms:
