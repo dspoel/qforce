@@ -263,7 +263,7 @@ def calc_cross_bond_bond(coords: np.ndarray, atoms: np.ndarray, r0s: np.ndarray,
     energy = fconst[0] * s1 * s2
 
     f1 = - fconst[0] * s2 * vec12 / r12
-    f3 = - fconst[0] * s1 * vec32 / r32  # Verify this since the instructions on GROMACS are somewhat unclear
+    f3 = - fconst[0] * s1 * vec32 / r32
 
     force[atoms[0]] += f1
     force[atoms[2]] += f3
